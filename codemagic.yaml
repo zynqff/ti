@@ -9,8 +9,20 @@ workflows:
     scripts:
       - name: Build iOS IPA
         script: |
-          xcode-project build-ipa \
-            --scheme "VibeTalkAudioLab"
+          # Автоматически находим .xcworkspace или .xcodeproj в репозитории
+          XCWORKSPACE=$(find . -maxdepth 3 -name "*.xcworkspace" | head -n 1)
+          XCODEPROJECT=$(find . -maxdepth 3 -name "*.xcodeproj" | head -n 1)
+
+          if [ -n "$XCWORKSPACE" ]; then
+            echo "Найден Workspace: $XCWORKSPACE"
+            xcode-project build-ipa --workspace "$XCWORKSPACE" --scheme "VibeTalkAudioLab"
+          elif [ -n "$XCODEPROJECT" ]; then
+            echo "Найден Project: $XCODEPROJECT"
+            xcode-project build-ipa --project "$XCODEPROJECT" --scheme "VibeTalkAudioLab"
+          else
+            echo "❌ Ошибка: Файлы .xcodeproj или .xcworkspace не найдены в репозитории!"
+            exit 1
+          fi
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
