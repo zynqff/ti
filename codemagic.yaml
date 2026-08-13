@@ -9,40 +9,45 @@ workflows:
     scripts:
       - name: Build Unsigned iOS IPA
         script: |
+          set -e
+
           XCODEPROJECT=$(find . -maxdepth 3 -name "*.xcodeproj" | head -n 1)
           echo "Найден проект: $XCODEPROJECT"
 
-          # 1. Сборка с явной передачей версии Swift и имени продукта
-          xcodebuild build \
+          # 1. Загружаем зависимости Swift Package Manager (если они есть)
+          xcodebuild -resolvePackageDependencies -project "$XCODEPROJECT" || true
+
+          # 2. Создаем полноценный архив приложения (.xcarchive)
+          xcodebuild archive \
             -project "$XCODEPROJECT" \
             -scheme "VibeTalkAudioLab" \
             -sdk iphoneos \
+            -archivePath "./build/VibeTalkAudioLab.xcarchive" \
             -configuration Release \
-            -derivedDataPath ./DerivedData \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
-            SWIFT_VERSION="5.0" \
-            PRODUCT_NAME="VibeTalkAudioLab"
+            SWIFT_VERSION="5.0"
 
-          # 2. Ищем скомпилированный .app файл в папке DerivedData
-          APP_PATH=$(find ./DerivedData -name "*.app" | grep -v "Index" | head -n 1)
+          # 3. Путь к скомпилированному .app внутри архива
+          APP_PATH=$(find ./build/VibeTalkAudioLab.xcarchive -name "*.app" | head -n 1)
 
           if [ -z "$APP_PATH" ]; then
-            echo "❌ Ошибка: Скомпилированный .app файл не найден!"
+            echo "❌ Ошибка: Приложение .app не найдено внутри .xcarchive!"
             exit 1
           fi
 
-          echo "Найдено приложение: $APP_PATH"
+          echo "✅ Найдено приложение: $APP_PATH"
 
-          # 3. Упаковываем в .ipa
+          # 4. Формируем правильно упакованный .ipa
           rm -rf Payload
           mkdir -p Payload
           cp -R "$APP_PATH" Payload/
           mkdir -p build/ios/ipa
           zip -r build/ios/ipa/VibeTalkAudioLab.ipa Payload
 
-          echo "✅ .ipa файл успешно создан!"
+          echo "🎉 Размер итогового .ipa:"
+          ls -lh build/ios/ipa/VibeTalkAudioLab.ipa
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
