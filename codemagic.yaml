@@ -1,0 +1,27 @@
+workflows:
+  ios-swift-build:
+    name: iOS Application Build
+    max_build_duration: 30
+    instance_type: mac_mini_m1
+    environment:
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: Initialize Xcode settings
+        script: |
+          xcode-project initialize
+      - name: Build iOS IPA
+        script: |
+          # Автоматическая сборка проекта Xcode в артефакт .ipa
+          xcode-project build-ipa \
+            --scheme "VibeTalkAudioLab"
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+    publishing:
+      email:
+        recipients:
+          - zynqff@gmail.com   # Укажи свою почту для уведомлений
+        notify:
+          success: true
+          failure: true
