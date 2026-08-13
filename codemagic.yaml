@@ -12,7 +12,7 @@ workflows:
           XCODEPROJECT=$(find . -maxdepth 3 -name "*.xcodeproj" | head -n 1)
           echo "Найден проект: $XCODEPROJECT"
 
-          # 1. Компилируем проект без требования подписи Apple
+          # 1. Компилируем проект
           xcodebuild build \
             -project "$XCODEPROJECT" \
             -scheme "VibeTalkAudioLab" \
@@ -21,12 +21,25 @@ workflows:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
-            BUILD_DIR=build
+            BUILD_DIR=build_output
 
-          # 2. Упаковываем собранное приложение в .ipa
-          mkdir -p build/ios/ipa Payload
-          cp -R build/Release-iphoneos/*.app Payload/
+          # 2. Динамически находим скомпилированный .app файл
+          APP_PATH=$(find build_output -name "*.app" | head -n 1)
+
+          if [ -z "$APP_PATH" ]; then
+            echo "❌ Ошибка: Скомпилированный .app файл не найден!"
+            exit 1
+          fi
+
+          echo "Найден приложение: $APP_PATH"
+
+          # 3. Упаковываем найденный .app в .ipa
+          mkdir -p Payload
+          cp -R "$APP_PATH" Payload/
+          mkdir -p build/ios/ipa
           zip -r build/ios/ipa/VibeTalkAudioLab.ipa Payload
+
+          echo "✅ .ipa файл успешно создан!"
     artifacts:
       - build/ios/ipa/*.ipa
       - /tmp/xcodebuild_logs/*.log
