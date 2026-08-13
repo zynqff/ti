@@ -2,7 +2,7 @@ workflows:
   ios-swift-build:
     name: iOS Application Build
     max_build_duration: 30
-    instance_type: mac_mini_m1
+    instance_type: mac_mini_m2
     environment:
       xcode: latest
       cocoapods: default
@@ -12,28 +12,31 @@ workflows:
           XCODEPROJECT=$(find . -maxdepth 3 -name "*.xcodeproj" | head -n 1)
           echo "Найден проект: $XCODEPROJECT"
 
-          # 1. Компилируем проект
+          # 1. Сборка с явной передачей версии Swift и имени продукта
           xcodebuild build \
             -project "$XCODEPROJECT" \
             -scheme "VibeTalkAudioLab" \
             -sdk iphoneos \
             -configuration Release \
+            -derivedDataPath ./DerivedData \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
-            BUILD_DIR=build_output
+            SWIFT_VERSION="5.0" \
+            PRODUCT_NAME="VibeTalkAudioLab"
 
-          # 2. Динамически находим скомпилированный .app файл
-          APP_PATH=$(find build_output -name "*.app" | head -n 1)
+          # 2. Ищем скомпилированный .app файл в папке DerivedData
+          APP_PATH=$(find ./DerivedData -name "*.app" | grep -v "Index" | head -n 1)
 
           if [ -z "$APP_PATH" ]; then
             echo "❌ Ошибка: Скомпилированный .app файл не найден!"
             exit 1
           fi
 
-          echo "Найден приложение: $APP_PATH"
+          echo "Найдено приложение: $APP_PATH"
 
-          # 3. Упаковываем найденный .app в .ipa
+          # 3. Упаковываем в .ipa
+          rm -rf Payload
           mkdir -p Payload
           cp -R "$APP_PATH" Payload/
           mkdir -p build/ios/ipa
