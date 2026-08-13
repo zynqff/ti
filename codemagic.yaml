@@ -7,12 +7,8 @@ workflows:
       xcode: latest
       cocoapods: default
     scripts:
-      - name: Initialize Xcode settings
-        script: |
-          xcode-project initialize
       - name: Build iOS IPA
         script: |
-          # Автоматическая сборка проекта Xcode в артефакт .ipa
           xcode-project build-ipa \
             --scheme "VibeTalkAudioLab"
     artifacts:
@@ -21,7 +17,7 @@ workflows:
     publishing:
       email:
         recipients:
-          - zynqff@gmail.com   # Укажи свою почту для уведомлений
+          - zynqff@gmail.com
         notify:
           success: true
           failure: true
