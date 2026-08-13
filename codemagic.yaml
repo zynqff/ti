@@ -2,7 +2,7 @@ workflows:
   ios-swift-build:
     name: iOS Application Build
     max_build_duration: 30
-    instance_type: mac_mini_m4
+    instance_type: mac_mini_m2
     environment:
       xcode: latest
       cocoapods: default
