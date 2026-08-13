@@ -2,7 +2,7 @@ workflows:
   ios-swift-build:
     name: iOS Application Build
     max_build_duration: 30
-    instance_type: mac_mini_m2
+    instance_type: mac_mini_m4
     environment:
       xcode: latest
       cocoapods: default
@@ -17,19 +17,20 @@ workflows:
           # 1. Загружаем зависимости Swift Package Manager (если они есть)
           xcodebuild -resolvePackageDependencies -project "$XCODEPROJECT" || true
 
-          # 2. Создаем полноценный архив приложения (.xcarchive)
+          # 2. Создаем архив, принудительно задавая имя продукта и платформу
           xcodebuild archive \
             -project "$XCODEPROJECT" \
             -scheme "VibeTalkAudioLab" \
-            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
             -archivePath "./build/VibeTalkAudioLab.xcarchive" \
             -configuration Release \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
-            SWIFT_VERSION="5.0"
+            SWIFT_VERSION="5.0" \
+            PRODUCT_NAME="VibeTalkAudioLab"
 
-          # 3. Путь к скомпилированному .app внутри архива
+          # 3. Находим скомпилированный .app внутри архива
           APP_PATH=$(find ./build/VibeTalkAudioLab.xcarchive -name "*.app" | head -n 1)
 
           if [ -z "$APP_PATH" ]; then
@@ -39,14 +40,14 @@ workflows:
 
           echo "✅ Найдено приложение: $APP_PATH"
 
-          # 4. Формируем правильно упакованный .ipa
+          # 4. Формируем готовый .ipa
           rm -rf Payload
           mkdir -p Payload
           cp -R "$APP_PATH" Payload/
           mkdir -p build/ios/ipa
           zip -r build/ios/ipa/VibeTalkAudioLab.ipa Payload
 
-          echo "🎉 Размер итогового .ipa:"
+          echo "🎉 Успешно! Размер получившегося .ipa:"
           ls -lh build/ios/ipa/VibeTalkAudioLab.ipa
     artifacts:
       - build/ios/ipa/*.ipa
