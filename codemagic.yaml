@@ -18,20 +18,18 @@ workflows:
         script: |
           set -euo pipefail
           cd "$CM_BUILD_DIR"
+          mkdir -p "$CM_BUILD_DIR/SourcePackages"
 
-          echo "🧹 Очищаем старые кэши SPM и DerivedData..."
-          rm -rf VibeTalkAudioLab.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
-          rm -rf ~/Library/Caches/org.swift.swiftpm/
-          rm -rf ~/Library/Developer/Xcode/DerivedData/
-
-          echo "📦 Принудительно генерируем Package.resolved и загружаем ONNX Runtime..."
+          echo "📦 Скачиваем Swift-пакеты (ONNX Runtime) для iOS..."
           xcodebuild -resolvePackageDependencies \
             -project VibeTalkAudioLab.xcodeproj \
             -scheme VibeTalkAudioLab \
-            -allowProvisioningUpdates
+            -destination 'generic/platform=iOS' \
+            -clonedSourcePackagesDirPath "$CM_BUILD_DIR/SourcePackages"
 
-          echo "🔍 Проверяем созданный Package.resolved:"
-          find . -name "Package.resolved"
+          echo "🔍 Проверяем содержимое загруженных пакетов:"
+          ls -la "$CM_BUILD_DIR/SourcePackages/checkouts" || true
+          ls -la "$CM_BUILD_DIR/SourcePackages/artifacts" || true
 
       - name: Build unsigned iOS device app
         script: |
@@ -47,6 +45,7 @@ workflows:
             -scheme VibeTalkAudioLab \
             -destination 'generic/platform=iOS' \
             -archivePath "$CM_BUILD_DIR/build_unsigned/VibeTalkAudioLab.xcarchive" \
+            -clonedSourcePackagesDirPath "$CM_BUILD_DIR/SourcePackages" \
             -configuration Release \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
