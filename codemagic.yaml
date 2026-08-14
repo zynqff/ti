@@ -25,7 +25,7 @@ workflows:
             -project "VibeTalkAudioLab.xcodeproj" \
             -clonedSourcePackagesDirPath ./DerivedData/SourcePackages || true
 
-          # 4. Собираем архив с отключенной функцией Explicit Module Build (предотвращает краш SwiftDriver)
+          # 4. Собираем архив приложения с явным указанием версии Swift
           xcodebuild archive \
             -project "VibeTalkAudioLab.xcodeproj" \
             -scheme "VibeTalkAudioLab" \
@@ -37,6 +37,7 @@ workflows:
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             AD_HOC_CODE_SIGNING_ALLOWED=YES \
+            SWIFT_VERSION="5.0" \
             SWIFT_ENABLE_EXPLICIT_MODULE_BUILD=NO \
             PRODUCT_NAME="VibeTalkAudioLab"
 
