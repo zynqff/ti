@@ -1,0 +1,11 @@
+[package]
+name = "vibetalk_df_bridge"
+version = "0.2.0"
+edition = "2021"
+
+[lib]
+crate-type = ["staticlib"]
+
+[dependencies]
+df3 = { package = "deep_filter", git = "https://github.com/Rikorose/DeepFilterNet.git", tag = "v0.5.6", default-features = false, features = ["default-model", "tract"] }
+ndarray = "0.15"
