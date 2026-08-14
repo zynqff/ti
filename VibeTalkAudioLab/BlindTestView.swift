@@ -100,7 +100,7 @@ struct BlindTestView: View {
         // For now, we'll simulate with placeholder file paths
         testSamples = [
             "RNNoise": "/path/to/rnnoise_sample.wav",
-            "DeepFilterNet2 Lite": "/path/to/dfnet2_sample.wav",
+            "DTLN2": "/path/to/dtln2_sample.wav",
             "DeepFilterNet3": "/path/to/dfnet3_sample.wav"
         ]
         

@@ -16,6 +16,19 @@
         13C78D4A2A7D4F8E00F1A2B3 /* ContinuousStreamTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13C78D492A7D4F8E00F1A2B2 /* ContinuousStreamTest.swift */; };
         13C78D4C2A7D4F8E00F1A2B3 /* AudioUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13C78D4B2A7D4F8E00F1A2B2 /* AudioUtils.swift */; };
         13C78D4E2A7D4F8E00F1A2B3 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13C78D4D2A7D4F8E00F1A2B2 /* App.swift */; };
+        9A00000012A7D4F8E00F1A2B3 /* RNNoiseBridge.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B00000012A7D4F8E00F1A2B2 /* RNNoiseBridge.c */; };
+        9A00000022A7D4F8E00F1A2B3 /* celt_lpc.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B00000022A7D4F8E00F1A2B2 /* celt_lpc.c */; };
+        9A00000032A7D4F8E00F1A2B3 /* denoise.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B00000032A7D4F8E00F1A2B2 /* denoise.c */; };
+        9A00000042A7D4F8E00F1A2B3 /* kiss_fft.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B00000042A7D4F8E00F1A2B2 /* kiss_fft.c */; };
+        9A00000052A7D4F8E00F1A2B3 /* nnet.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B00000052A7D4F8E00F1A2B2 /* nnet.c */; };
+        9A00000062A7D4F8E00F1A2B3 /* nnet_default.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B00000062A7D4F8E00F1A2B2 /* nnet_default.c */; };
+        9A00000072A7D4F8E00F1A2B3 /* pitch.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B00000072A7D4F8E00F1A2B2 /* pitch.c */; };
+        9A00000082A7D4F8E00F1A2B3 /* rnn.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B00000082A7D4F8E00F1A2B2 /* rnn.c */; };
+        9A00000092A7D4F8E00F1A2B3 /* rnnoise_tables.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B00000092A7D4F8E00F1A2B2 /* rnnoise_tables.c */; };
+        9A000000A2A7D4F8E00F1A2B3 /* rnnoise_data.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B000000A2A7D4F8E00F1A2B2 /* rnnoise_data.c */; };
+        9A00000C2A7D4F8E00F1A2B3 /* DTLNProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B00000C2A7D4F8E00F1A2B2 /* DTLNProcessor.swift */; };
+        9A00000D2A7D4F8E00F1A2B3 /* Models in Resources */ = {isa = PBXBuildFile; fileRef = 9B00000D2A7D4F8E00F1A2B2 /* Models */; };
+        9A00000E2A7D4F8E00F1A2B3 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9B00000E2A7D4F8E00F1A2B2 /* Accelerate.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -28,8 +41,22 @@
         13C78D492A7D4F8E00F1A2B2 /* ContinuousStreamTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousStreamTest.swift; sourceTree = "<group>"; };
         13C78D4B2A7D4F8E00F1A2B2 /* AudioUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioUtils.swift; sourceTree = "<group>"; };
         13C78D4D2A7D4F8E00F1A2B2 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
+        9C0000012A7D4F8E00F1A2B2 /* RNNoiseBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RNNoiseBridge.h; sourceTree = "<group>"; };
+        9B00000012A7D4F8E00F1A2B2 /* RNNoiseBridge.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = RNNoiseBridge.c; sourceTree = "<group>"; };
+        9B00000022A7D4F8E00F1A2B2 /* celt_lpc.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = DSP/RNNoise/celt_lpc.c; sourceTree = "<group>"; };
+        9B00000032A7D4F8E00F1A2B2 /* denoise.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = DSP/RNNoise/denoise.c; sourceTree = "<group>"; };
+        9B00000042A7D4F8E00F1A2B2 /* kiss_fft.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = DSP/RNNoise/kiss_fft.c; sourceTree = "<group>"; };
+        9B00000052A7D4F8E00F1A2B2 /* nnet.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = DSP/RNNoise/nnet.c; sourceTree = "<group>"; };
+        9B00000062A7D4F8E00F1A2B2 /* nnet_default.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = DSP/RNNoise/nnet_default.c; sourceTree = "<group>"; };
+        9B00000072A7D4F8E00F1A2B2 /* pitch.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = DSP/RNNoise/pitch.c; sourceTree = "<group>"; };
+        9B00000082A7D4F8E00F1A2B2 /* rnn.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = DSP/RNNoise/rnn.c; sourceTree = "<group>"; };
+        9B00000092A7D4F8E00F1A2B2 /* rnnoise_tables.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = DSP/RNNoise/rnnoise_tables.c; sourceTree = "<group>"; };
+        9B000000A2A7D4F8E00F1A2B2 /* rnnoise_data.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = DSP/RNNoise/rnnoise_data.c; sourceTree = "<group>"; };
+        9B00000C2A7D4F8E00F1A2B2 /* DTLNProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DTLNProcessor.swift; sourceTree = "<group>"; };
+        9B00000D2A7D4F8E00F1A2B2 /* Models */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources/Models; sourceTree = "<group>"; };
         13C78D512A7D4F8E00F1A2B2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
         13C78D532A7D4F8E00F1A2B2 /* VibeTalkAudioLab.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VibeTalkAudioLab.app; sourceTree = BUILT_PRODUCTS_DIR; };
+        9B00000E2A7D4F8E00F1A2B2 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -37,6 +64,7 @@
             isa = PBXFrameworksBuildPhase;
             buildActionMask = 2147483647;
             files = (
+                9A00000E2A7D4F8E00F1A2B3 /* Accelerate.framework in Frameworks */,
             );
             runOnlyForDeploymentPostprocessing = 0;
         };
@@ -55,6 +83,19 @@
                 13C78D472A7D4F8E00F1A2B2 /* BlindTestView.swift */,
                 13C78D492A7D4F8E00F1A2B2 /* ContinuousStreamTest.swift */,
                 13C78D4B2A7D4F8E00F1A2B2 /* AudioUtils.swift */,
+                9C0000012A7D4F8E00F1A2B2 /* RNNoiseBridge.h */,
+                9B00000012A7D4F8E00F1A2B2 /* RNNoiseBridge.c */,
+                9B00000022A7D4F8E00F1A2B2 /* celt_lpc.c */,
+                9B00000032A7D4F8E00F1A2B2 /* denoise.c */,
+                9B00000042A7D4F8E00F1A2B2 /* kiss_fft.c */,
+                9B00000052A7D4F8E00F1A2B2 /* nnet.c */,
+                9B00000062A7D4F8E00F1A2B2 /* nnet_default.c */,
+                9B00000072A7D4F8E00F1A2B2 /* pitch.c */,
+                9B00000082A7D4F8E00F1A2B2 /* rnn.c */,
+                9B00000092A7D4F8E00F1A2B2 /* rnnoise_tables.c */,
+                9B000000A2A7D4F8E00F1A2B2 /* rnnoise_data.c */,
+                9B00000C2A7D4F8E00F1A2B2 /* DTLNProcessor.swift */,
+                9B00000D2A7D4F8E00F1A2B2 /* Models */,
                 13C78D512A7D4F8E00F1A2B2 /* Info.plist */,
             );
             path = VibeTalkAudioLab;
@@ -82,6 +123,9 @@
             buildRules = (
             );
             dependencies = (
+            );
+            packageProductDependencies = (
+                9E0000012A7D4F8E00F1A2B3 /* onnxruntime */,
             );
             name = VibeTalkAudioLab;
             productName = VibeTalkAudioLab;
@@ -124,6 +168,7 @@
             isa = PBXResourcesBuildPhase;
             buildActionMask = 2147483647;
             files = (
+                9A00000D2A7D4F8E00F1A2B3 /* Models in Resources */,
             );
             runOnlyForDeploymentPostprocessing = 0;
         };
@@ -143,6 +188,17 @@
                 13C78D482A7D4F8E00F1A2B3 /* BlindTestView.swift in Sources */,
                 13C78D4A2A7D4F8E00F1A2B3 /* ContinuousStreamTest.swift in Sources */,
                 13C78D4C2A7D4F8E00F1A2B3 /* AudioUtils.swift in Sources */,
+                9A00000012A7D4F8E00F1A2B3 /* RNNoiseBridge.c in Sources */,
+                9A00000022A7D4F8E00F1A2B3 /* celt_lpc.c in Sources */,
+                9A00000032A7D4F8E00F1A2B3 /* denoise.c in Sources */,
+                9A00000042A7D4F8E00F1A2B3 /* kiss_fft.c in Sources */,
+                9A00000052A7D4F8E00F1A2B3 /* nnet.c in Sources */,
+                9A00000062A7D4F8E00F1A2B3 /* nnet_default.c in Sources */,
+                9A00000072A7D4F8E00F1A2B3 /* pitch.c in Sources */,
+                9A00000082A7D4F8E00F1A2B3 /* rnn.c in Sources */,
+                9A00000092A7D4F8E00F1A2B3 /* rnnoise_tables.c in Sources */,
+                9A000000A2A7D4F8E00F1A2B3 /* rnnoise_data.c in Sources */,
+                9A00000C2A7D4F8E00F1A2B3 /* DTLNProcessor.swift in Sources */,
             );
             runOnlyForDeploymentPostprocessing = 0;
         };
@@ -197,6 +253,11 @@
                 MTL_FAST_MATH = YES;
                 ONLY_ACTIVE_ARCH = YES;
                 SDKROOT = iphoneos;
+                    PRODUCT_BUNDLE_IDENTIFIER = "com.siasoft.vibetalkaudiolab";
+                HEADER_SEARCH_PATHS = ("$(SRCROOT)/VibeTalkAudioLab/DSP/RNNoise",);
+                SWIFT_OBJC_BRIDGING_HEADER = "$(SRCROOT)/VibeTalkAudioLab/VibeTalkAudioLab-Bridging-Header.h";
+                LIBRARY_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/Vendor/DeepFilter";
+                OTHER_LDFLAGS = "$(inherited) -lvibetalk_df_bridge";
                 SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
                 SWIFT_EMIT_LOC_STRINGS = YES;
                 SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -248,6 +309,11 @@
                 MTL_ENABLE_DEBUG_INFO = NO;
                 MTL_FAST_MATH = YES;
                 SDKROOT = iphoneos;
+                    PRODUCT_BUNDLE_IDENTIFIER = "com.siasoft.vibetalkaudiolab";
+                HEADER_SEARCH_PATHS = ("$(SRCROOT)/VibeTalkAudioLab/DSP/RNNoise",);
+                SWIFT_OBJC_BRIDGING_HEADER = "$(SRCROOT)/VibeTalkAudioLab/VibeTalkAudioLab-Bridging-Header.h";
+                LIBRARY_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/Vendor/DeepFilter";
+                OTHER_LDFLAGS = "$(inherited) -lvibetalk_df_bridge";
                 SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
                 SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
                 TARGETED_DEVICE_FAMILY = "1,2";
@@ -274,6 +340,14 @@
         };
 /* End XCBuildConfiguration section */
 
+/* Begin XCSwiftPackageProductDependency section */
+        9E0000012A7D4F8E00F1A2B3 /* onnxruntime */ = {
+            isa = XCSwiftPackageProductDependency;
+            package = 9E0000022A7D4F8E00F1A2B3 /* XCRemoteSwiftPackageReference "onnxruntime" */;
+            productName = onnxruntime;
+        };
+/* End XCSwiftPackageProductDependency section */
+
 /* Begin XCRemoteSwiftPackageReference section */
         13C78D572A7D4F8E00F1A2B3 /* Swift Package Reference */ = {
             isa = XCRemoteSwiftPackageReference;
@@ -281,6 +355,14 @@
             requirement = {
                 kind = upToNextMajorVersion;
                 minimumVersion = "1.0.0";
+            };
+        };
+        9E0000022A7D4F8E00F1A2B3 /* XCRemoteSwiftPackageReference "onnxruntime" */ = {
+            isa = XCRemoteSwiftPackageReference;
+            repositoryURL = "https://github.com/microsoft/onnxruntime-swift-package-manager";
+            requirement = {
+                kind = exactVersion;
+                version = "1.20.0";
             };
         };
 /* End XCRemoteSwiftPackageReference section */

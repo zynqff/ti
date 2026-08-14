@@ -91,7 +91,7 @@ struct MainBenchmarkView: View {
                                 audioManager: audioManager,
                                 processors: [
                                     RNNoiseProcessor(),
-                                    DeepFilterNet2Processor(),
+                                    DTLN2Processor(),
                                     DeepFilterNet3Processor()
                                 ]
                             )
@@ -116,7 +116,7 @@ struct MainBenchmarkView: View {
                                         chunkSizeMs: audioManager.selectedChunkSize,
                                         processors: [
                                             RNNoiseProcessor(),
-                                            DeepFilterNet2Processor(),
+                                            DTLN2Processor(),
                                             DeepFilterNet3Processor()
                                         ]
                                     )

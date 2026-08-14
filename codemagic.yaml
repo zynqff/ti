@@ -1,72 +1,61 @@
 workflows:
-  ios-swift-build:
-    name: iOS Application Build
-    max_build_duration: 30
-    instance_type: mac_mini_m1
+  ios-unsigned-ipa:
+    name: VibeTalk Audio Lab - unsigned IPA (RNNoise + DTLN2 + DFNet3)
+    max_build_duration: 120
+    instance_type: mac_mini_m2
     environment:
       xcode: latest
       cocoapods: default
     scripts:
-      - name: Build Unsigned iOS IPA
+      - name: Verify models and prepare RNNoise
         script: |
-          set -e
-
-          # 1. Синхронизируем файлы проекта
-          if [ -d "VibeTalkAudioLab" ]; then
-            echo "📁 Переносим исходники и ресурсы в корень..."
-            cp -R VibeTalkAudioLab/* . 2>/dev/null || true
-          fi
-
-          # 2. Очищаем все временные папки
-          rm -rf build Payload DerivedData
-
-          # 3. Принудительно отключаем падающий режим Explicit Modules на уровне Xcode
-          defaults write com.apple.dt.XCBuild EnableExplicitModules -bool NO
-
-          # 4. Собираем проект в безопасном режиме (без крашей SwiftDriver)
-          xcodebuild archive \
-            -project "VibeTalkAudioLab.xcodeproj" \
-            -scheme "VibeTalkAudioLab" \
-            -destination 'generic/platform=iOS' \
-            -archivePath "./build/VibeTalkAudioLab.xcarchive" \
-            -derivedDataPath "./DerivedData" \
+          set -euo pipefail
+          cd "$CM_BUILD_DIR"
+          chmod +x Scripts/prepare_native.sh
+          ./Scripts/prepare_native.sh
+      - name: Resolve Swift packages
+        script: |
+          set -euo pipefail
+          cd "$CM_BUILD_DIR"
+          xcodebuild -resolvePackageDependencies \
+            -project VibeTalkAudioLab.xcodeproj \
+            -scheme VibeTalkAudioLab
+      - name: Build unsigned iOS device app
+        script: |
+          set -euo pipefail
+          cd "$CM_BUILD_DIR"
+          rm -rf build_unsigned
+          mkdir -p build_unsigned
+          xcodebuild \
+            -project VibeTalkAudioLab.xcodeproj \
+            -scheme VibeTalkAudioLab \
             -configuration Release \
-            CODE_SIGN_IDENTITY="" \
-            CODE_SIGNING_REQUIRED=NO \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$CM_BUILD_DIR/build_unsigned/DerivedData" \
             CODE_SIGNING_ALLOWED=NO \
-            AD_HOC_CODE_SIGNING_ALLOWED=YES \
-            SWIFT_VERSION="5.0" \
-            SWIFT_ENABLE_EXPLICIT_MODULE_BUILD=NO \
-            SWIFT_USE_INTEGRATED_DRIVER=NO \
-            COMPILER_INDEX_STORE_ENABLE=NO \
-            SWIFT_COMPILATION_MODE=singlefile \
-            PRODUCT_NAME="VibeTalkAudioLab"
-
-          # 5. Проверяем скомпилированный .app
-          APP_PATH=$(find ./build/VibeTalkAudioLab.xcarchive -name "*.app" | head -n 1)
-
-          if [ -z "$APP_PATH" ]; then
-            echo "❌ Ошибка: .app файл не найден!"
-            exit 1
-          fi
-
-          echo "✅ Найдено приложение: $APP_PATH"
-
-          # 6. Упаковываем в .ipa
-          mkdir -p Payload
-          cp -R "$APP_PATH" Payload/
-          mkdir -p build/ios/ipa
-          zip -r build/ios/ipa/VibeTalkAudioLab.ipa Payload
-
-          echo "🎉 Сборка завершена!"
-          ls -lh build/ios/ipa/VibeTalkAudioLab.ipa
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY='' \
+            DEVELOPMENT_TEAM='' \
+            build
+      - name: Package unsigned IPA container
+        script: |
+          set -euo pipefail
+          cd "$CM_BUILD_DIR"
+          APP="$CM_BUILD_DIR/build_unsigned/DerivedData/Build/Products/Release-iphoneos/VibeTalkAudioLab.app"
+          test -d "$APP"
+          rm -rf "$CM_BUILD_DIR/build_unsigned/Payload"
+          mkdir -p "$CM_BUILD_DIR/build_unsigned/Payload"
+          cp -R "$APP" "$CM_BUILD_DIR/build_unsigned/Payload/"
+          cd "$CM_BUILD_DIR/build_unsigned"
+          /usr/bin/zip -qry VibeTalkAudioLab-unsigned.ipa Payload
+      - name: Diagnostics
+        script: |
+          cd "$CM_BUILD_DIR"
+          xcodebuild -version || true
+          ls -lh build_unsigned/VibeTalkAudioLab-unsigned.ipa
     artifacts:
-      - "**/build/ios/ipa/*.ipa"
+      - build_unsigned/VibeTalkAudioLab-unsigned.ipa
+      - build_unsigned/DerivedData/Build/Products/Release-iphoneos/VibeTalkAudioLab.app
+      - build_unsigned/DerivedData/Build/Products/Release-iphoneos/*.dSYM
       - /tmp/xcodebuild_logs/*.log
-    publishing:
-      email:
-        recipients:
-          - zynqff@gmail.com
-        notify:
-          success: true
-          failure: true
