@@ -1,7 +1,7 @@
 workflows:
   ios-unsigned-ipa:
     name: VibeTalk Audio Lab - unsigned IPA (RNNoise + DTLN2 + DFNet3)
-    max_build_duration: 60
+    max_build_duration: 120
     instance_type: mac_mini_m2
     environment:
       xcode: latest
@@ -18,16 +18,18 @@ workflows:
         script: |
           set -euo pipefail
           cd "$CM_BUILD_DIR"
+          mkdir -p "$CM_BUILD_DIR/build_unsigned/SourcePackages"
+
+          # Скачиваем SPM-пакеты напрямую в папку проекта
           xcodebuild -resolvePackageDependencies \
             -project VibeTalkAudioLab.xcodeproj \
-            -scheme VibeTalkAudioLab
+            -scheme VibeTalkAudioLab \
+            -clonedSourcePackagesDirPath "$CM_BUILD_DIR/build_unsigned/SourcePackages"
 
       - name: Build unsigned iOS device app
         script: |
           set -euo pipefail
           cd "$CM_BUILD_DIR"
-          rm -rf build_unsigned
-          mkdir -p build_unsigned
 
           xcodebuild archive \
             -project VibeTalkAudioLab.xcodeproj \
@@ -35,6 +37,7 @@ workflows:
             -destination 'generic/platform=iOS' \
             -archivePath "$CM_BUILD_DIR/build_unsigned/VibeTalkAudioLab.xcarchive" \
             -derivedDataPath "$CM_BUILD_DIR/build_unsigned/DerivedData" \
+            -clonedSourcePackagesDirPath "$CM_BUILD_DIR/build_unsigned/SourcePackages" \
             -configuration Release \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
@@ -52,7 +55,6 @@ workflows:
           set -euo pipefail
           cd "$CM_BUILD_DIR"
 
-          # Ищем скомпилированное приложение внутри архива
           APP=$(find "$CM_BUILD_DIR/build_unsigned/VibeTalkAudioLab.xcarchive" -name "*.app" | head -n 1)
           test -d "$APP"
 
