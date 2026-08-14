@@ -14,38 +14,22 @@ workflows:
           chmod +x Scripts/prepare_native.sh
           ./Scripts/prepare_native.sh
 
-      - name: Resolve Swift packages
-        script: |
-          set -euo pipefail
-          cd "$CM_BUILD_DIR"
-          mkdir -p "$CM_BUILD_DIR/SourcePackages"
-
-          echo "📦 Скачиваем Swift-пакеты (ONNX Runtime) для iOS..."
-          xcodebuild -resolvePackageDependencies \
-            -project VibeTalkAudioLab.xcodeproj \
-            -scheme VibeTalkAudioLab \
-            -destination 'generic/platform=iOS' \
-            -clonedSourcePackagesDirPath "$CM_BUILD_DIR/SourcePackages"
-
-          echo "🔍 Проверяем содержимое загруженных пакетов:"
-          ls -la "$CM_BUILD_DIR/SourcePackages/checkouts" || true
-          ls -la "$CM_BUILD_DIR/SourcePackages/artifacts" || true
-
       - name: Build unsigned iOS device app
         script: |
           set -euo pipefail
           cd "$CM_BUILD_DIR"
 
-          rm -rf build_unsigned
+          # Очищаем старые сборки и создаем единую папку для DerivedData и результатов
+          rm -rf build_unsigned DerivedData
           mkdir -p build_unsigned
 
-          echo "🔨 Начинаем сборку архива приложения..."
+          echo "🔨 Запуск сборки приложения и загрузки бинарных пакетов SPM..."
           xcodebuild archive \
             -project VibeTalkAudioLab.xcodeproj \
             -scheme VibeTalkAudioLab \
             -destination 'generic/platform=iOS' \
             -archivePath "$CM_BUILD_DIR/build_unsigned/VibeTalkAudioLab.xcarchive" \
-            -clonedSourcePackagesDirPath "$CM_BUILD_DIR/SourcePackages" \
+            -derivedDataPath "$CM_BUILD_DIR/DerivedData" \
             -configuration Release \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
