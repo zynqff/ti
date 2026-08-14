@@ -11,23 +11,22 @@ workflows:
         script: |
           set -e
 
-          # 1. Поиск Xcode-проекта
-          XCODEPROJECT_PATH=$(find . -maxdepth 3 -name "*.xcodeproj" | head -n 1)
-          PROJECT_DIR=$(dirname "$XCODEPROJECT_PATH")
-          XCODEPROJECT=$(basename "$XCODEPROJECT_PATH")
+          # 1. Копируем ВСЕ файлы из подпапки VibeTalkAudioLab в корень,
+          # где их ожидает xcodebuild
+          if [ -d "VibeTalkAudioLab" ]; then
+            echo "📁 Переносим исходники и ресурсы из VibeTalkAudioLab в корень..."
+            cp -R VibeTalkAudioLab/* . 2>/dev/null || true
+          fi
 
-          echo "📁 Проект найден: $XCODEPROJECT в папке $PROJECT_DIR"
+          # 2. Очищаем папку сборки
+          rm -rf build Payload
 
-          # 2. Исправление путей: скопировать Swift-файлы из подпапок в корень, где их ожидает Xcode
-          echo "🔍 Синхронизация файлов исходного кода..."
-          find . -mindepth 2 -name "*.swift" -exec cp -f {} . \; 2>/dev/null || true
+          # 3. Загружаем зависимости SPM (если есть)
+          xcodebuild -resolvePackageDependencies -project "VibeTalkAudioLab.xcodeproj" || true
 
-          # 3. Загрузка зависимостей (если используются)
-          xcodebuild -resolvePackageDependencies -project "$XCODEPROJECT" || true
-
-          # 4. Архивация проекта
+          # 4. Собираем архив приложения
           xcodebuild archive \
-            -project "$XCODEPROJECT" \
+            -project "VibeTalkAudioLab.xcodeproj" \
             -scheme "VibeTalkAudioLab" \
             -destination 'generic/platform=iOS' \
             -archivePath "./build/VibeTalkAudioLab.xcarchive" \
@@ -35,27 +34,27 @@ workflows:
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
+            AD_HOC_CODE_SIGNING_ALLOWED=YES \
             SWIFT_VERSION="5.0" \
             PRODUCT_NAME="VibeTalkAudioLab"
 
-          # 5. Поиск скомпилированного .app
+          # 5. Проверяем наличие скомпилированного .app
           APP_PATH=$(find ./build/VibeTalkAudioLab.xcarchive -name "*.app" | head -n 1)
 
           if [ -z "$APP_PATH" ]; then
-            echo "❌ Ошибка: Приложение .app не найдено внутри .xcarchive!"
+            echo "❌ Ошибка: .app не найден внутри .xcarchive!"
             exit 1
           fi
 
-          echo "✅ Найдено скомпилированное приложение: $APP_PATH"
+          echo "✅ Найдено приложение: $APP_PATH"
 
-          # 6. Упаковка в .ipa
-          rm -rf Payload
+          # 6. Упаковываем в .ipa
           mkdir -p Payload
           cp -R "$APP_PATH" Payload/
           mkdir -p build/ios/ipa
           zip -r build/ios/ipa/VibeTalkAudioLab.ipa Payload
 
-          echo "🎉 Сборка успешно завершена!"
+          echo "🎉 Сборка завершена!"
           ls -lh build/ios/ipa/VibeTalkAudioLab.ipa
     artifacts:
       - "**/build/ios/ipa/*.ipa"
