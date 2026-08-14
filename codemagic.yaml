@@ -18,30 +18,35 @@ workflows:
         script: |
           set -euo pipefail
           cd "$CM_BUILD_DIR"
-          rm -rf SourcePackages
-          mkdir -p SourcePackages
 
-          echo "📦 Принудительно скачиваем Swift Packages (ONNX Runtime)..."
+          echo "🧹 Очищаем старые кэши SPM и DerivedData..."
+          rm -rf VibeTalkAudioLab.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+          rm -rf ~/Library/Caches/org.swift.swiftpm/
+          rm -rf ~/Library/Developer/Xcode/DerivedData/
+
+          echo "📦 Принудительно генерируем Package.resolved и загружаем ONNX Runtime..."
           xcodebuild -resolvePackageDependencies \
             -project VibeTalkAudioLab.xcodeproj \
             -scheme VibeTalkAudioLab \
-            -clonedSourcePackagesDirPath "$CM_BUILD_DIR/SourcePackages" \
-            -scmProvider system
+            -allowProvisioningUpdates
+
+          echo "🔍 Проверяем созданный Package.resolved:"
+          find . -name "Package.resolved"
 
       - name: Build unsigned iOS device app
         script: |
           set -euo pipefail
           cd "$CM_BUILD_DIR"
 
-          echo "🔨 Начинаем сборку..."
+          rm -rf build_unsigned
+          mkdir -p build_unsigned
+
+          echo "🔨 Начинаем сборку архива приложения..."
           xcodebuild archive \
             -project VibeTalkAudioLab.xcodeproj \
             -scheme VibeTalkAudioLab \
             -destination 'generic/platform=iOS' \
             -archivePath "$CM_BUILD_DIR/build_unsigned/VibeTalkAudioLab.xcarchive" \
-            -derivedDataPath "$CM_BUILD_DIR/build_unsigned/DerivedData" \
-            -clonedSourcePackagesDirPath "$CM_BUILD_DIR/SourcePackages" \
-            -scmProvider system \
             -configuration Release \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
@@ -52,7 +57,9 @@ workflows:
             PRODUCT_BUNDLE_IDENTIFIER="com.vibetalk.audiolab" \
             GENERATE_INFOPLIST_FILE=YES \
             INFOPLIST_KEY_NSMicrophoneUsageDescription="Приложению требуется доступ к микрофону для работы со звуком." \
-            INFOPLIST_KEY_UILaunchScreen_Generation=YES
+            INFOPLIST_KEY_UILaunchScreen_Generation=YES \
+            -skipPackagePluginValidation \
+            -skipMacroValidation
 
       - name: Package unsigned IPA container
         script: |
@@ -77,5 +84,5 @@ workflows:
 
     artifacts:
       - build_unsigned/VibeTalkAudioLab-unsigned.ipa
-      - build_unsigned/DerivedData/Build/Products/Release-iphoneos/*.dSYM
+      - build_unsigned/VibeTalkAudioLab.xcarchive
       - /tmp/xcodebuild_logs/*.log
