@@ -14,16 +14,32 @@ workflows:
           chmod +x Scripts/prepare_native.sh
           ./Scripts/prepare_native.sh
 
+      - name: Resolve Swift packages
+        script: |
+          set -euo pipefail
+          cd "$CM_BUILD_DIR"
+
+          echo "🧹 Очищаем прошлые кэши..."
+          rm -rf DerivedData ~/Library/Caches/org.swift.swiftpm
+
+          echo "📦 Принудительно качаем ONNX Runtime строго под iOS..."
+          xcodebuild -resolvePackageDependencies \
+            -project VibeTalkAudioLab.xcodeproj \
+            -scheme VibeTalkAudioLab \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath "$CM_BUILD_DIR/DerivedData" \
+            SDKROOT=iphoneos \
+            -scmProvider system
+
       - name: Build unsigned iOS device app
         script: |
           set -euo pipefail
           cd "$CM_BUILD_DIR"
 
-          # Очищаем старые сборки и создаем единую папку для DerivedData и результатов
-          rm -rf build_unsigned DerivedData
+          rm -rf build_unsigned
           mkdir -p build_unsigned
 
-          echo "🔨 Запуск сборки приложения и загрузки бинарных пакетов SPM..."
+          echo "🔨 Начинаем сборку архива..."
           xcodebuild archive \
             -project VibeTalkAudioLab.xcodeproj \
             -scheme VibeTalkAudioLab \
@@ -31,6 +47,7 @@ workflows:
             -archivePath "$CM_BUILD_DIR/build_unsigned/VibeTalkAudioLab.xcarchive" \
             -derivedDataPath "$CM_BUILD_DIR/DerivedData" \
             -configuration Release \
+            SDKROOT=iphoneos \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGN_IDENTITY='' \
