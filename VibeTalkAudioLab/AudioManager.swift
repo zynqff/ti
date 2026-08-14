@@ -7,7 +7,7 @@ class AudioManager: ObservableObject {
     
     let sampleRate: Double = 48000
     let channels: AVAudioChannelCount = 1
-    let bitDepth: AVAudioBitPoint = 16
+    let bitDepth: Int = 16
     
     private var audioEngine: AVAudioEngine
     private var inputNode: AVAudioInputNode
