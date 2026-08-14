@@ -18,13 +18,13 @@ workflows:
         script: |
           set -euo pipefail
           cd "$CM_BUILD_DIR"
-          mkdir -p "$CM_BUILD_DIR/build_unsigned/SourcePackages"
+          mkdir -p "$CM_BUILD_DIR/build_unsigned/DerivedData"
 
-          # Скачиваем SPM-пакеты напрямую в папку проекта
+          # Загружаем SPM пакеты прямо в единый DerivedData
           xcodebuild -resolvePackageDependencies \
             -project VibeTalkAudioLab.xcodeproj \
             -scheme VibeTalkAudioLab \
-            -clonedSourcePackagesDirPath "$CM_BUILD_DIR/build_unsigned/SourcePackages"
+            -derivedDataPath "$CM_BUILD_DIR/build_unsigned/DerivedData"
 
       - name: Build unsigned iOS device app
         script: |
@@ -37,7 +37,6 @@ workflows:
             -destination 'generic/platform=iOS' \
             -archivePath "$CM_BUILD_DIR/build_unsigned/VibeTalkAudioLab.xcarchive" \
             -derivedDataPath "$CM_BUILD_DIR/build_unsigned/DerivedData" \
-            -clonedSourcePackagesDirPath "$CM_BUILD_DIR/build_unsigned/SourcePackages" \
             -configuration Release \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
@@ -48,7 +47,9 @@ workflows:
             PRODUCT_BUNDLE_IDENTIFIER="com.vibetalk.audiolab" \
             GENERATE_INFOPLIST_FILE=YES \
             INFOPLIST_KEY_NSMicrophoneUsageDescription="Приложению требуется доступ к микрофону для работы со звуком." \
-            INFOPLIST_KEY_UILaunchScreen_Generation=YES
+            INFOPLIST_KEY_UILaunchScreen_Generation=YES \
+            -skipPackagePluginValidation \
+            -skipMacroValidation
 
       - name: Package unsigned IPA container
         script: |
