@@ -18,25 +18,30 @@ workflows:
         script: |
           set -euo pipefail
           cd "$CM_BUILD_DIR"
-          mkdir -p "$CM_BUILD_DIR/build_unsigned/DerivedData"
+          rm -rf SourcePackages
+          mkdir -p SourcePackages
 
-          # Загружаем SPM пакеты прямо в единый DerivedData
+          echo "📦 Принудительно скачиваем Swift Packages (ONNX Runtime)..."
           xcodebuild -resolvePackageDependencies \
             -project VibeTalkAudioLab.xcodeproj \
             -scheme VibeTalkAudioLab \
-            -derivedDataPath "$CM_BUILD_DIR/build_unsigned/DerivedData"
+            -clonedSourcePackagesDirPath "$CM_BUILD_DIR/SourcePackages" \
+            -scmProvider system
 
       - name: Build unsigned iOS device app
         script: |
           set -euo pipefail
           cd "$CM_BUILD_DIR"
 
+          echo "🔨 Начинаем сборку..."
           xcodebuild archive \
             -project VibeTalkAudioLab.xcodeproj \
             -scheme VibeTalkAudioLab \
             -destination 'generic/platform=iOS' \
             -archivePath "$CM_BUILD_DIR/build_unsigned/VibeTalkAudioLab.xcarchive" \
             -derivedDataPath "$CM_BUILD_DIR/build_unsigned/DerivedData" \
+            -clonedSourcePackagesDirPath "$CM_BUILD_DIR/SourcePackages" \
+            -scmProvider system \
             -configuration Release \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
@@ -47,9 +52,7 @@ workflows:
             PRODUCT_BUNDLE_IDENTIFIER="com.vibetalk.audiolab" \
             GENERATE_INFOPLIST_FILE=YES \
             INFOPLIST_KEY_NSMicrophoneUsageDescription="Приложению требуется доступ к микрофону для работы со звуком." \
-            INFOPLIST_KEY_UILaunchScreen_Generation=YES \
-            -skipPackagePluginValidation \
-            -skipMacroValidation
+            INFOPLIST_KEY_UILaunchScreen_Generation=YES
 
       - name: Package unsigned IPA container
         script: |
