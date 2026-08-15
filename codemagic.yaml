@@ -28,6 +28,7 @@ workflows:
             -scheme VibeTalkAudioLab \
             -destination 'generic/platform=iOS' \
             -derivedDataPath "$CM_BUILD_DIR/DerivedData" \
+            -clonedSourcePackagesDirPath "$CM_BUILD_DIR/SourcePackages" \
             SDKROOT=iphoneos \
             -scmProvider system
 
@@ -46,6 +47,7 @@ workflows:
             -destination 'generic/platform=iOS' \
             -archivePath "$CM_BUILD_DIR/build_unsigned/VibeTalkAudioLab.xcarchive" \
             -derivedDataPath "$CM_BUILD_DIR/DerivedData" \
+            -clonedSourcePackagesDirPath "$CM_BUILD_DIR/SourcePackages" \
             -configuration Release \
             SDKROOT=iphoneos \
             CODE_SIGNING_ALLOWED=NO \
