@@ -26,6 +26,7 @@
         9A00000082A7D4F8E00F1A2B3 /* rnn.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B00000082A7D4F8E00F1A2B2 /* rnn.c */; };
         9A00000092A7D4F8E00F1A2B3 /* rnnoise_tables.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B00000092A7D4F8E00F1A2B2 /* rnnoise_tables.c */; };
         9A000000A2A7D4F8E00F1A2B3 /* rnnoise_data.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B000000A2A7D4F8E00F1A2B2 /* rnnoise_data.c */; };
+        9A0000B2A7D4F8E00F1A2B3 /* parse_lpcnet_weights.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B0000B2A7D4F8E00F1A2B2 /* parse_lpcnet_weights.c */; };
         9A00000C2A7D4F8E00F1A2B3 /* DTLNProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B00000C2A7D4F8E00F1A2B2 /* DTLNProcessor.swift */; };
         9A00000D2A7D4F8E00F1A2B3 /* Models in Resources */ = {isa = PBXBuildFile; fileRef = 9B00000D2A7D4F8E00F1A2B2 /* Models */; };
         9A00000E2A7D4F8E00F1A2B3 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9B00000E2A7D4F8E00F1A2B2 /* Accelerate.framework */; };
@@ -52,6 +53,7 @@
         9B00000082A7D4F8E00F1A2B2 /* rnn.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = DSP/RNNoise/rnn.c; sourceTree = "<group>"; };
         9B00000092A7D4F8E00F1A2B2 /* rnnoise_tables.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = DSP/RNNoise/rnnoise_tables.c; sourceTree = "<group>"; };
         9B000000A2A7D4F8E00F1A2B2 /* rnnoise_data.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = DSP/RNNoise/rnnoise_data.c; sourceTree = "<group>"; };
+        9B0000B2A7D4F8E00F1A2B2 /* parse_lpcnet_weights.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = DSP/RNNoise/parse_lpcnet_weights.c; sourceTree = "<group>"; };
         9B00000C2A7D4F8E00F1A2B2 /* DTLNProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VibeTalkAudioLab/DTLNProcessor.swift; sourceTree = SOURCE_ROOT; };
         9B00000D2A7D4F8E00F1A2B2 /* Models */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources/Models; sourceTree = "<group>"; };
         13C78D512A7D4F8E00F1A2B2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
@@ -102,6 +104,7 @@
                 9B00000082A7D4F8E00F1A2B2 /* rnn.c */,
                 9B00000092A7D4F8E00F1A2B2 /* rnnoise_tables.c */,
                 9B000000A2A7D4F8E00F1A2B2 /* rnnoise_data.c */,
+                9B0000B2A7D4F8E00F1A2B2 /* parse_lpcnet_weights.c */,
                 9B00000C2A7D4F8E00F1A2B2 /* DTLNProcessor.swift */,
                 9B00000D2A7D4F8E00F1A2B2 /* Models */,
                 13C78D512A7D4F8E00F1A2B2 /* Info.plist */,
@@ -210,6 +213,7 @@
                 9A00000082A7D4F8E00F1A2B3 /* rnn.c in Sources */,
                 9A00000092A7D4F8E00F1A2B3 /* rnnoise_tables.c in Sources */,
                 9A000000A2A7D4F8E00F1A2B3 /* rnnoise_data.c in Sources */,
+                9A0000B2A7D4F8E00F1A2B3 /* parse_lpcnet_weights.c in Sources */,
                 9A00000C2A7D4F8E00F1A2B3 /* DTLNProcessor.swift in Sources */,
             );
             runOnlyForDeploymentPostprocessing = 0;
