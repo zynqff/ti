@@ -32,7 +32,13 @@
 #include "opus_types.h"
 #include <math.h>
 #include "arch.h"
+
+/* This header only exists for x86 targets; including it unconditionally
+   breaks the build on ARM (e.g. iOS device builds), since the x86/ folder
+   is never vendored for non-x86 platforms. */
+#if defined(__x86_64__) || defined(__i386__) || defined(_M_X64) || defined(_M_IX86)
 #include "x86/x86_arch_macros.h"
+#endif
 
 
 #if defined(__AVX__) || defined(__SSE2__)
