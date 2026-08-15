@@ -197,14 +197,14 @@ final class DTLN2Processor: AudioProcessor {
             throw DTLNError.inference("DTLN stage 1 mask count \(mask.count), expected 257")
         }
 
-        var estimated = [(real: Float, imag: Float)](repeating: (0, 0), count: 512)
+        var estimated = [FFT512.C](repeating: FFT512.C(real: 0, imag: 0), count: 512)
         for k in 0...256 {
             let a = magnitude[k] * mask[k]
-            estimated[k] = (a * cosf(phase[k]), a * sinf(phase[k]))
+            estimated[k] = FFT512.C(real: a * cosf(phase[k]), imag: a * sinf(phase[k]))
         }
         for k in 257..<512 {
             let mirror = 512 - k
-            estimated[k] = (estimated[mirror].real, -estimated[mirror].imag)
+            estimated[k] = FFT512.C(real: estimated[mirror].real, imag: -estimated[mirror].imag)
         }
 
         let timeBlock = FFT512.inverse(estimated)
@@ -250,7 +250,7 @@ final class DTLN2Processor: AudioProcessor {
     private func tensorFloats(_ value: ORTValue) throws -> [Float] {
         let data = try value.tensorData()
         let count = data.length / MemoryLayout<Float>.size
-        return data.withUnsafeBytes { raw in
+        return (data as Data).withUnsafeBytes { raw in
             Array(raw.bindMemory(to: Float.self).prefix(count))
         }
     }
