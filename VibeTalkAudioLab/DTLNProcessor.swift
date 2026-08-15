@@ -1,6 +1,6 @@
 import Foundation
 import AVFoundation
-import onnxruntime
+import OnnxRuntimeBindings
 
 /// Real-time DTLN ONNX runner based on the reference two-stage streaming graph.
 /// The reference implementation uses 16 kHz audio, block_len=512 and block_shift=128.
