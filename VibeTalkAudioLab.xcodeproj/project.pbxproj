@@ -71,6 +71,14 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+        13C78D2C2A7D4F8E00F1A2B2 /* VibeTalkAudioLab */ = {
+            isa = PBXGroup;
+            children = (
+                13C78D2E2A7D4F8E00F1A2B2 /* VibeTalkAudioLab */,
+                13C78D2F2A7D4F8E00F1A2B2 /* Products */,
+            );
+            sourceTree = "<group>";
+        };
         13C78D2E2A7D4F8E00F1A2B2 /* VibeTalkAudioLab */ = {
             isa = PBXGroup;
             children = (
