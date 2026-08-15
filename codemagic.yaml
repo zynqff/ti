@@ -88,3 +88,66 @@ workflows:
       - build_unsigned/VibeTalkAudioLab-unsigned.ipa
       - build_unsigned/VibeTalkAudioLab.xcarchive
       - /tmp/xcodebuild_logs/*.log
+
+
+scripts:
+
+  - name: Fix Xcode source paths
+    script: |
+      set -e
+      PROJECT="VibeTalkAudioLab.xcodeproj/project.pbxproj"
+
+      echo "=== Fixing Swift source paths in Xcode project ==="
+
+      python3 <<'PY'
+      from pathlib import Path
+      import re
+
+      project = Path("VibeTalkAudioLab.xcodeproj/project.pbxproj")
+      text = project.read_text()
+
+      files = [
+          "App.swift",
+          "ContentView.swift",
+          "AudioManager.swift",
+          "AudioProcessor.swift",
+          "BenchmarkManager.swift",
+          "ResultsView.swift",
+          "BlindTestView.swift",
+          "ContinuousStreamTest.swift",
+          "AudioUtils.swift",
+          "DTLNProcessor.swift",
+      ]
+
+      # Fix PBXFileReference/PBXBuildFile path entries when they point
+      # to the repository root. Existing files remain in VibeTalkAudioLab/.
+      for name in files:
+          text = re.sub(
+              rf'(?m)^(\s*path\s*=\s*){re.escape(name)}(\s*;)',
+              rf'\1VibeTalkAudioLab/{name}\2',
+              text
+          )
+
+      project.write_text(text)
+      PY
+
+      echo "=== Verifying source files ==="
+      for FILE in \
+        App.swift \
+        ContentView.swift \
+        AudioManager.swift \
+        AudioProcessor.swift \
+        BenchmarkManager.swift \
+        ResultsView.swift \
+        BlindTestView.swift \
+        ContinuousStreamTest.swift \
+        AudioUtils.swift \
+        DTLNProcessor.swift
+      do
+        test -f "VibeTalkAudioLab/$FILE" || {
+          echo "ERROR: missing VibeTalkAudioLab/$FILE"
+          exit 1
+        }
+      done
+
+      echo "Source paths fixed successfully."
