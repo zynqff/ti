@@ -1,408 +1,376 @@
 // !$*UTF8*$!
 {
-	archiveVersion = 1;
-	classes = {
-	};
-	objectVersion = 56;
-	objects = {
+    archiveVersion = 1;
+    classes = {
+    };
+    objectVersion = 55;
+    objects = {
 
 /* Begin PBXBuildFile section */
-		300000000000000000000001 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000001 /* App.swift */; };
-		300000000000000000000002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000002 /* ContentView.swift */; };
-		300000000000000000000003 /* ResultsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000003 /* ResultsView.swift */; };
-		300000000000000000000004 /* BlindTestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000004 /* BlindTestView.swift */; };
-		300000000000000000000005 /* ContinuousStreamTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000005 /* ContinuousStreamTest.swift */; };
-		300000000000000000000006 /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000006 /* AudioManager.swift */; };
-		300000000000000000000007 /* AudioProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000007 /* AudioProcessor.swift */; };
-		300000000000000000000008 /* AudioUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000008 /* AudioUtils.swift */; };
-		300000000000000000000009 /* BenchmarkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000009 /* BenchmarkManager.swift */; };
-		300000000000000000000010 /* DTLNProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000010 /* DTLNProcessor.swift */; };
-		300000000000000000000011 /* denoise.c in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000011 /* denoise.c */; };
-		300000000000000000000012 /* rnn.c in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000012 /* rnn.c */; };
-		300000000000000000000013 /* nnet.c in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000013 /* nnet.c */; };
-		300000000000000000000014 /* kiss_fft.c in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000014 /* kiss_fft.c */; };
-		300000000000000000000015 /* celt_lpc.c in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000015 /* celt_lpc.c */; };
-		300000000000000000000016 /* pitch.c in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000016 /* pitch.c */; };
-		300000000000000000000017 /* rnnoise_tables.c in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000017 /* rnnoise_tables.c */; };
-		300000000000000000000018 /* rnnoise_data.c in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000018 /* rnnoise_data.c */; };
-		300000000000000000000019 /* RNNoiseBridge.c in Sources */ = {isa = PBXBuildFile; fileRef = 200000000000000000000019 /* RNNoiseBridge.c */; };
-		300000000000000000000022 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 200000000000000000000022 /* Accelerate.framework */; };
-		300000000000000000000023 /* libvibetalk_df_bridge.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 200000000000000000000023 /* libvibetalk_df_bridge.a */; };
+        13C78D3E2A7D4F8E00F1A2B3 /* AudioManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13C78D3D2A7D4F8E00F1A2B2 /* AudioManager.swift */; };
+        13C78D402A7D4F8E00F1A2B3 /* AudioProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13C78D3F2A7D4F8E00F1A2B2 /* AudioProcessor.swift */; };
+        13C78D422A7D4F8E00F1A2B3 /* BenchmarkManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13C78D412A7D4F8E00F1A2B2 /* BenchmarkManager.swift */; };
+        13C78D442A7D4F8E00F1A2B3 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13C78D432A7D4F8E00F1A2B2 /* ContentView.swift */; };
+        13C78D462A7D4F8E00F1A2B3 /* ResultsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13C78D452A7D4F8E00F1A2B2 /* ResultsView.swift */; };
+        13C78D482A7D4F8E00F1A2B3 /* BlindTestView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13C78D472A7D4F8E00F1A2B2 /* BlindTestView.swift */; };
+        13C78D4A2A7D4F8E00F1A2B3 /* ContinuousStreamTest.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13C78D492A7D4F8E00F1A2B2 /* ContinuousStreamTest.swift */; };
+        13C78D4C2A7D4F8E00F1A2B3 /* AudioUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13C78D4B2A7D4F8E00F1A2B2 /* AudioUtils.swift */; };
+        13C78D4E2A7D4F8E00F1A2B3 /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 13C78D4D2A7D4F8E00F1A2B2 /* App.swift */; };
+        9A00000012A7D4F8E00F1A2B3 /* RNNoiseBridge.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B00000012A7D4F8E00F1A2B2 /* RNNoiseBridge.c */; };
+        9A00000022A7D4F8E00F1A2B3 /* celt_lpc.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B00000022A7D4F8E00F1A2B2 /* celt_lpc.c */; };
+        9A00000032A7D4F8E00F1A2B3 /* denoise.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B00000032A7D4F8E00F1A2B2 /* denoise.c */; };
+        9A00000042A7D4F8E00F1A2B3 /* kiss_fft.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B00000042A7D4F8E00F1A2B2 /* kiss_fft.c */; };
+        9A00000052A7D4F8E00F1A2B3 /* nnet.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B00000052A7D4F8E00F1A2B2 /* nnet.c */; };
+        9A00000062A7D4F8E00F1A2B3 /* nnet_default.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B00000062A7D4F8E00F1A2B2 /* nnet_default.c */; };
+        9A00000072A7D4F8E00F1A2B3 /* pitch.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B00000072A7D4F8E00F1A2B2 /* pitch.c */; };
+        9A00000082A7D4F8E00F1A2B3 /* rnn.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B00000082A7D4F8E00F1A2B2 /* rnn.c */; };
+        9A00000092A7D4F8E00F1A2B3 /* rnnoise_tables.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B00000092A7D4F8E00F1A2B2 /* rnnoise_tables.c */; };
+        9A000000A2A7D4F8E00F1A2B3 /* rnnoise_data.c in Sources */ = {isa = PBXBuildFile; fileRef = 9B000000A2A7D4F8E00F1A2B2 /* rnnoise_data.c */; };
+        9A00000C2A7D4F8E00F1A2B3 /* DTLNProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9B00000C2A7D4F8E00F1A2B2 /* DTLNProcessor.swift */; };
+        9A00000D2A7D4F8E00F1A2B3 /* Models in Resources */ = {isa = PBXBuildFile; fileRef = 9B00000D2A7D4F8E00F1A2B2 /* Models */; };
+        9A00000E2A7D4F8E00F1A2B3 /* Accelerate.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9B00000E2A7D4F8E00F1A2B2 /* Accelerate.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		200000000000000000000001 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
-		200000000000000000000002 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-		200000000000000000000003 /* ResultsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultsView.swift; sourceTree = "<group>"; };
-		200000000000000000000004 /* BlindTestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlindTestView.swift; sourceTree = "<group>"; };
-		200000000000000000000005 /* ContinuousStreamTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousStreamTest.swift; sourceTree = "<group>"; };
-		200000000000000000000006 /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioManager.swift; sourceTree = "<group>"; };
-		200000000000000000000007 /* AudioProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioProcessor.swift; sourceTree = "<group>"; };
-		200000000000000000000008 /* AudioUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioUtils.swift; sourceTree = "<group>"; };
-		200000000000000000000009 /* BenchmarkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenchmarkManager.swift; sourceTree = "<group>"; };
-		200000000000000000000010 /* DTLNProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DTLNProcessor.swift; sourceTree = "<group>"; };
-		200000000000000000000011 /* denoise.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = denoise.c; sourceTree = "<group>"; };
-		200000000000000000000012 /* rnn.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = rnn.c; sourceTree = "<group>"; };
-		200000000000000000000013 /* nnet.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = nnet.c; sourceTree = "<group>"; };
-		200000000000000000000014 /* kiss_fft.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = kiss_fft.c; sourceTree = "<group>"; };
-		200000000000000000000015 /* celt_lpc.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = celt_lpc.c; sourceTree = "<group>"; };
-		200000000000000000000016 /* pitch.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = pitch.c; sourceTree = "<group>"; };
-		200000000000000000000017 /* rnnoise_tables.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = rnnoise_tables.c; sourceTree = "<group>"; };
-		200000000000000000000018 /* rnnoise_data.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = rnnoise_data.c; sourceTree = "<group>"; };
-		200000000000000000000019 /* RNNoiseBridge.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = RNNoiseBridge.c; sourceTree = "<group>"; };
-		200000000000000000000020 /* RNNoiseBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RNNoiseBridge.h; sourceTree = "<group>"; };
-		200000000000000000000021 /* VibeTalkAudioLab-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = VibeTalkAudioLab-Bridging-Header.h; sourceTree = "<group>"; };
-		200000000000000000000022 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
-		200000000000000000000023 /* libvibetalk_df_bridge.a */ = {isa = PBXFileReference; lastKnownFileType = archive.ar; name = libvibetalk_df_bridge.a; path = Vendor/DeepFilter/libvibetalk_df_bridge.a; sourceTree = "<group>"; };
-		200000000000000000000024 /* VibeTalkAudioLab.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VibeTalkAudioLab.app; sourceTree = BUILT_PRODUCTS_DIR; };
+        13C78D3D2A7D4F8E00F1A2B2 /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioManager.swift; sourceTree = "<group>"; };
+        13C78D3F2A7D4F8E00F1A2B2 /* AudioProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioProcessor.swift; sourceTree = "<group>"; };
+        13C78D412A7D4F8E00F1A2B2 /* BenchmarkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenchmarkManager.swift; sourceTree = "<group>"; };
+        13C78D432A7D4F8E00F1A2B2 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+        13C78D452A7D4F8E00F1A2B2 /* ResultsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultsView.swift; sourceTree = "<group>"; };
+        13C78D472A7D4F8E00F1A2B2 /* BlindTestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlindTestView.swift; sourceTree = "<group>"; };
+        13C78D492A7D4F8E00F1A2B2 /* ContinuousStreamTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousStreamTest.swift; sourceTree = "<group>"; };
+        13C78D4B2A7D4F8E00F1A2B2 /* AudioUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioUtils.swift; sourceTree = "<group>"; };
+        13C78D4D2A7D4F8E00F1A2B2 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
+        9C0000012A7D4F8E00F1A2B2 /* RNNoiseBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RNNoiseBridge.h; sourceTree = "<group>"; };
+        9B00000012A7D4F8E00F1A2B2 /* RNNoiseBridge.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = RNNoiseBridge.c; sourceTree = "<group>"; };
+        9B00000022A7D4F8E00F1A2B2 /* celt_lpc.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = DSP/RNNoise/celt_lpc.c; sourceTree = "<group>"; };
+        9B00000032A7D4F8E00F1A2B2 /* denoise.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = DSP/RNNoise/denoise.c; sourceTree = "<group>"; };
+        9B00000042A7D4F8E00F1A2B2 /* kiss_fft.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = DSP/RNNoise/kiss_fft.c; sourceTree = "<group>"; };
+        9B00000052A7D4F8E00F1A2B2 /* nnet.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = DSP/RNNoise/nnet.c; sourceTree = "<group>"; };
+        9B00000062A7D4F8E00F1A2B2 /* nnet_default.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = DSP/RNNoise/nnet_default.c; sourceTree = "<group>"; };
+        9B00000072A7D4F8E00F1A2B2 /* pitch.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = DSP/RNNoise/pitch.c; sourceTree = "<group>"; };
+        9B00000082A7D4F8E00F1A2B2 /* rnn.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = DSP/RNNoise/rnn.c; sourceTree = "<group>"; };
+        9B00000092A7D4F8E00F1A2B2 /* rnnoise_tables.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = DSP/RNNoise/rnnoise_tables.c; sourceTree = "<group>"; };
+        9B000000A2A7D4F8E00F1A2B2 /* rnnoise_data.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = DSP/RNNoise/rnnoise_data.c; sourceTree = "<group>"; };
+        9B00000C2A7D4F8E00F1A2B2 /* DTLNProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DTLNProcessor.swift; sourceTree = "<group>"; };
+        9B00000D2A7D4F8E00F1A2B2 /* Models */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources/Models; sourceTree = "<group>"; };
+        13C78D512A7D4F8E00F1A2B2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+        13C78D532A7D4F8E00F1A2B2 /* VibeTalkAudioLab.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VibeTalkAudioLab.app; sourceTree = BUILT_PRODUCTS_DIR; };
+        9B00000E2A7D4F8E00F1A2B2 /* Accelerate.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Accelerate.framework; path = System/Library/Frameworks/Accelerate.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		400000000000000000000002 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				300000000000000000000022 /* Accelerate.framework in Frameworks */,
-				300000000000000000000023 /* libvibetalk_df_bridge.a in Frameworks */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
+        13C78D362A7D4F8E00F1A2B3 /* Frameworks */ = {
+            isa = PBXFrameworksBuildPhase;
+            buildActionMask = 2147483647;
+            files = (
+                9A00000E2A7D4F8E00F1A2B3 /* Accelerate.framework in Frameworks */,
+            );
+            runOnlyForDeploymentPostprocessing = 0;
+        };
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		111111112640000000000003 = {
-			isa = PBXGroup;
-			children = (
-				111111112640000000000004 /* VibeTalkAudioLab */,
-				111111112640000000000006 /* Frameworks */,
-				111111112640000000000007 /* Products */,
-			);
-			sourceTree = "<group>";
-		};
-		111111112640000000000004 /* VibeTalkAudioLab */ = {
-			isa = PBXGroup;
-			children = (
-				200000000000000000000001 /* App.swift */,
-				200000000000000000000002 /* ContentView.swift */,
-				200000000000000000000003 /* ResultsView.swift */,
-				200000000000000000000004 /* BlindTestView.swift */,
-				200000000000000000000005 /* ContinuousStreamTest.swift */,
-				200000000000000000000006 /* AudioManager.swift */,
-				200000000000000000000007 /* AudioProcessor.swift */,
-				200000000000000000000008 /* AudioUtils.swift */,
-				200000000000000000000009 /* BenchmarkManager.swift */,
-				200000000000000000000010 /* DTLNProcessor.swift */,
-				111111112640000000000005 /* DSP */,
-				200000000000000000000021 /* VibeTalkAudioLab-Bridging-Header.h */,
-			);
-			name = VibeTalkAudioLab;
-			path = VibeTalkAudioLab;
-			sourceTree = "<group>";
-		};
-		111111112640000000000005 /* DSP */ = {
-			isa = PBXGroup;
-			children = (
-				200000000000000000000011 /* denoise.c */,
-				200000000000000000000012 /* rnn.c */,
-				200000000000000000000013 /* nnet.c */,
-				200000000000000000000014 /* kiss_fft.c */,
-				200000000000000000000015 /* celt_lpc.c */,
-				200000000000000000000016 /* pitch.c */,
-				200000000000000000000017 /* rnnoise_tables.c */,
-				200000000000000000000018 /* rnnoise_data.c */,
-				200000000000000000000019 /* RNNoiseBridge.c */,
-				200000000000000000000020 /* RNNoiseBridge.h */,
-			);
-			path = DSP/RNNoise;
-			sourceTree = "<group>";
-		};
-		111111112640000000000006 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-				200000000000000000000022 /* Accelerate.framework */,
-				200000000000000000000023 /* libvibetalk_df_bridge.a */,
-			);
-			name = Frameworks;
-			sourceTree = "<group>";
-		};
-		111111112640000000000007 /* Products */ = {
-			isa = PBXGroup;
-			children = (
-				200000000000000000000024 /* VibeTalkAudioLab.app */,
-			);
-			name = Products;
-			sourceTree = "<group>";
-		};
+        13C78D2E2A7D4F8E00F1A2B2 /* VibeTalkAudioLab */ = {
+            isa = PBXGroup;
+            children = (
+                13C78D4D2A7D4F8E00F1A2B2 /* App.swift */,
+                13C78D432A7D4F8E00F1A2B2 /* ContentView.swift */,
+                13C78D3D2A7D4F8E00F1A2B2 /* AudioManager.swift */,
+                13C78D3F2A7D4F8E00F1A2B2 /* AudioProcessor.swift */,
+                13C78D412A7D4F8E00F1A2B2 /* BenchmarkManager.swift */,
+                13C78D452A7D4F8E00F1A2B2 /* ResultsView.swift */,
+                13C78D472A7D4F8E00F1A2B2 /* BlindTestView.swift */,
+                13C78D492A7D4F8E00F1A2B2 /* ContinuousStreamTest.swift */,
+                13C78D4B2A7D4F8E00F1A2B2 /* AudioUtils.swift */,
+                9C0000012A7D4F8E00F1A2B2 /* RNNoiseBridge.h */,
+                9B00000012A7D4F8E00F1A2B2 /* RNNoiseBridge.c */,
+                9B00000022A7D4F8E00F1A2B2 /* celt_lpc.c */,
+                9B00000032A7D4F8E00F1A2B2 /* denoise.c */,
+                9B00000042A7D4F8E00F1A2B2 /* kiss_fft.c */,
+                9B00000052A7D4F8E00F1A2B2 /* nnet.c */,
+                9B00000062A7D4F8E00F1A2B2 /* nnet_default.c */,
+                9B00000072A7D4F8E00F1A2B2 /* pitch.c */,
+                9B00000082A7D4F8E00F1A2B2 /* rnn.c */,
+                9B00000092A7D4F8E00F1A2B2 /* rnnoise_tables.c */,
+                9B000000A2A7D4F8E00F1A2B2 /* rnnoise_data.c */,
+                9B00000C2A7D4F8E00F1A2B2 /* DTLNProcessor.swift */,
+                9B00000D2A7D4F8E00F1A2B2 /* Models */,
+                13C78D512A7D4F8E00F1A2B2 /* Info.plist */,
+            );
+            path = VibeTalkAudioLab;
+            sourceTree = "<group>";
+        };
+        13C78D2F2A7D4F8E00F1A2B2 /* Products */ = {
+            isa = PBXGroup;
+            children = (
+                13C78D532A7D4F8E00F1A2B2 /* VibeTalkAudioLab.app */,
+            );
+            name = Products;
+            sourceTree = "<group>";
+        };
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		111111112640000000000001 /* VibeTalkAudioLab */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 600000000000000000000001 /* Build configuration list for PBXNativeTarget "VibeTalkAudioLab" */;
-			buildPhases = (
-				400000000000000000000001 /* Sources */,
-				400000000000000000000002 /* Frameworks */,
-				400000000000000000000003 /* Resources */,
-			);
-			buildRules = (
-			);
-			dependencies = (
-			);
-			name = VibeTalkAudioLab;
-			packageProductDependencies = (
-				500000000000000000000003 /* onnxruntime */,
-				500000000000000000000004 /* SwiftProtobuf */,
-			);
-			productName = VibeTalkAudioLab;
-			productReference = 200000000000000000000024 /* VibeTalkAudioLab.app */;
-			productType = "com.apple.product-type.application";
-		};
+        13C78D382A7D4F8E00F1A2B2 /* VibeTalkAudioLab */ = {
+            isa = PBXNativeTarget;
+            buildConfigurationList = 13C78D562A7D4F8E00F1A2B2 /* Build configuration list for PBXNativeTarget "VibeTalkAudioLab" */;
+            buildPhases = (
+                13C78D352A7D4F8E00F1A2B3 /* Sources */,
+                13C78D362A7D4F8E00F1A2B3 /* Frameworks */,
+                13C78D372A7D4F8E00F1A2B3 /* Resources */,
+            );
+            buildRules = (
+            );
+            dependencies = (
+            );
+            packageProductDependencies = (
+                9E0000012A7D4F8E00F1A2B3 /* onnxruntime */,
+            );
+            name = VibeTalkAudioLab;
+            productName = VibeTalkAudioLab;
+            productReference = 13C78D532A7D4F8E00F1A2B2 /* VibeTalkAudioLab.app */;
+            productType = "com.apple.product-type.application";
+        };
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		111111112640000000000002 /* Project object */ = {
-			isa = PBXProject;
-			attributes = {
-				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 1500;
-				LastUpgradeCheck = 1500;
-				TargetAttributes = {
-					111111112640000000000001 = {
-						CreatedOnToolsVersion = 15.0;
-					};
-				};
-			};
-			buildConfigurationList = 600000000000000000000004 /* Build configuration list for PBXProject "VibeTalkAudioLab" */;
-			compatibilityVersion = "Xcode 14.0";
-			developmentRegion = en;
-			hasScannedForEncodings = 0;
-			knownRegions = (
-				en,
-				Base,
-			);
-			mainGroup = 111111112640000000000003;
-			packageReferences = (
-				500000000000000000000001 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */,
-				500000000000000000000002 /* XCRemoteSwiftPackageReference "swift-protobuf" */,
-			);
-			productRefGroup = 111111112640000000000007 /* Products */;
-			projectDirPath = "";
-			projectRoot = "";
-			targets = (
-				111111112640000000000001 /* VibeTalkAudioLab */,
-			);
-		};
+        13C78D2D2A7D4F8E00F1A2B2 /* Project object */ = {
+            isa = PBXProject;
+            attributes = {
+                BuildSystemType = Latest;
+                LastSwiftUpdateCheck = 1430;
+                LastUpgradeCheck = 1430;
+                TargetAttributes = {
+                    13C78D382A7D4F8E00F1A2B2 = {};
+                };
+            };
+            buildConfigurationList = 13C78D302A7D4F8E00F1A2B2 /* Build configuration list for PBXProject "VibeTalkAudioLab" */;
+            compatibilityVersion = "Xcode 14.0";
+            developmentRegion = en;
+            hasScannedForEncodings = 0;
+            knownRegions = (
+                en,
+                Base,
+            );
+            mainGroup = 13C78D2C2A7D4F8E00F1A2B2 /* VibeTalkAudioLab */;
+            productRefGroup = 13C78D2F2A7D4F8E00F1A2B2 /* Products */; 
+            packageReferences = (
+                13C78D572A7D4F8E00F1A2B3 /* Swift Package Reference */,
+                9E0000022A7D4F8E00F1A2B3 /* XCRemoteSwiftPackageReference "onnxruntime" */,
+            );
+            projectDirPath = "";
+            projectRoot = "";
+            targets = (
+                13C78D382A7D4F8E00F1A2B2 /* VibeTalkAudioLab */,
+            );
+        };
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		400000000000000000000003 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
+        13C78D372A7D4F8E00F1A2B3 /* Resources */ = {
+            isa = PBXResourcesBuildPhase;
+            buildActionMask = 2147483647;
+            files = (
+                9A00000D2A7D4F8E00F1A2B3 /* Models in Resources */,
+            );
+            runOnlyForDeploymentPostprocessing = 0;
+        };
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		400000000000000000000001 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-				300000000000000000000001 /* App.swift in Sources */,
-				300000000000000000000002 /* ContentView.swift in Sources */,
-				300000000000000000000003 /* ResultsView.swift in Sources */,
-				300000000000000000000004 /* BlindTestView.swift in Sources */,
-				300000000000000000000005 /* ContinuousStreamTest.swift in Sources */,
-				300000000000000000000006 /* AudioManager.swift in Sources */,
-				300000000000000000000007 /* AudioProcessor.swift in Sources */,
-				300000000000000000000008 /* AudioUtils.swift in Sources */,
-				300000000000000000000009 /* BenchmarkManager.swift in Sources */,
-				300000000000000000000010 /* DTLNProcessor.swift in Sources */,
-				300000000000000000000011 /* denoise.c in Sources */,
-				300000000000000000000012 /* rnn.c in Sources */,
-				300000000000000000000013 /* nnet.c in Sources */,
-				300000000000000000000014 /* kiss_fft.c in Sources */,
-				300000000000000000000015 /* celt_lpc.c in Sources */,
-				300000000000000000000016 /* pitch.c in Sources */,
-				300000000000000000000017 /* rnnoise_tables.c in Sources */,
-				300000000000000000000018 /* rnnoise_data.c in Sources */,
-				300000000000000000000019 /* RNNoiseBridge.c in Sources */,
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
+        13C78D352A7D4F8E00F1A2B3 /* Sources */ = {
+            isa = PBXSourcesBuildPhase;
+            buildActionMask = 2147483647;
+            files = (
+                13C78D4E2A7D4F8E00F1A2B3 /* App.swift in Sources */,
+                13C78D442A7D4F8E00F1A2B3 /* ContentView.swift in Sources */,
+                13C78D3E2A7D4F8E00F1A2B3 /* AudioManager.swift in Sources */,
+                13C78D402A7D4F8E00F1A2B3 /* AudioProcessor.swift in Sources */,
+                13C78D422A7D4F8E00F1A2B3 /* BenchmarkManager.swift in Sources */,
+                13C78D462A7D4F8E00F1A2B3 /* ResultsView.swift in Sources */,
+                13C78D482A7D4F8E00F1A2B3 /* BlindTestView.swift in Sources */,
+                13C78D4A2A7D4F8E00F1A2B3 /* ContinuousStreamTest.swift in Sources */,
+                13C78D4C2A7D4F8E00F1A2B3 /* AudioUtils.swift in Sources */,
+                9A00000012A7D4F8E00F1A2B3 /* RNNoiseBridge.c in Sources */,
+                9A00000022A7D4F8E00F1A2B3 /* celt_lpc.c in Sources */,
+                9A00000032A7D4F8E00F1A2B3 /* denoise.c in Sources */,
+                9A00000042A7D4F8E00F1A2B3 /* kiss_fft.c in Sources */,
+                9A00000052A7D4F8E00F1A2B3 /* nnet.c in Sources */,
+                9A00000062A7D4F8E00F1A2B3 /* nnet_default.c in Sources */,
+                9A00000072A7D4F8E00F1A2B3 /* pitch.c in Sources */,
+                9A00000082A7D4F8E00F1A2B3 /* rnn.c in Sources */,
+                9A00000092A7D4F8E00F1A2B3 /* rnnoise_tables.c in Sources */,
+                9A000000A2A7D4F8E00F1A2B3 /* rnnoise_data.c in Sources */,
+                9A00000C2A7D4F8E00F1A2B3 /* DTLNProcessor.swift in Sources */,
+            );
+            runOnlyForDeploymentPostprocessing = 0;
+        };
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		600000000000000000000002 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(SRCROOT)/VibeTalkAudioLab/DSP/RNNoise",
-				);
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Vendor/DeepFilter",
-				);
-				MARKETING_VERSION = 1.0;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					"-lvibetalk_df_bridge",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.siasoft.vibetalkaudiolab;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "$(SRCROOT)/VibeTalkAudioLab/VibeTalkAudioLab-Bridging-Header.h";
-				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		600000000000000000000003 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(SRCROOT)/VibeTalkAudioLab/DSP/RNNoise",
-				);
-				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
-				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				LIBRARY_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/Vendor/DeepFilter",
-				);
-				MARKETING_VERSION = 1.0;
-				OTHER_LDFLAGS = (
-					"$(inherited)",
-					"-lvibetalk_df_bridge",
-				);
-				PRODUCT_BUNDLE_IDENTIFIER = com.siasoft.vibetalkaudiolab;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_OBJC_BRIDGING_HEADER = "$(SRCROOT)/VibeTalkAudioLab/VibeTalkAudioLab-Bridging-Header.h";
-				SWIFT_COMPILATION_MODE = wholemodule;
-				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
-				SWIFT_VERSION = 5.0;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Release;
-		};
-		600000000000000000000005 /* Debug */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = dwarf;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				ENABLE_TESTABILITY = YES;
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_NO_COMMON_BLOCKS = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PREPROCESSOR_DEFINITIONS = (
-					"DEBUG=1",
-					"$(inherited)",
-				);
-				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
-				ONLY_ACTIVE_ARCH = YES;
-				SDKROOT = iphoneos;
-			};
-			name = Debug;
-		};
-		600000000000000000000006 /* Release */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				ALWAYS_SEARCH_USER_PATHS = NO;
-				CLANG_ENABLE_MODULES = YES;
-				CLANG_ENABLE_OBJC_ARC = YES;
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				ENABLE_NS_ASSERTIONS = NO;
-				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				GCC_NO_COMMON_BLOCKS = YES;
-				MTL_ENABLE_DEBUG_INFO = NO;
-				SDKROOT = iphoneos;
-				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
+        13C78D542A7D4F8E00F1A2B2 /* Debug */ = {
+            isa = XCBuildConfiguration;
+            buildSettings = {
+                ALWAYS_SEARCH_USER_PATHS = NO;
+                CLANG_ANALYZER_NONNULL = YES;
+                CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+                CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+                CLANG_CXX_LIBRARY = "libc++";
+                CLANG_ENABLE_MODULES = YES;
+                CLANG_ENABLE_OBJC_ARC = YES;
+                CLANG_ENABLE_OBJC_WEAK = YES;
+                CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+                CLANG_WARN_BOOL_CONVERSION = YES;
+                CLANG_WARN_COMMA = YES;
+                CLANG_WARN_CONSTANT_CONVERSION = YES;
+                CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+                CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+                CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+                CLANG_WARN_EMPTY_BODY = YES;
+                CLANG_WARN_ENUM_CONVERSION = YES;
+                CLANG_WARN_INFINITE_RECURSION = YES;
+                CLANG_WARN_INT_CONVERSION = YES;
+                CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+                CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+                CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+                CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+                CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+                CLANG_WARN_STRICT_PROTOTYPES = YES;
+                CLANG_WARN_SUSPICIOUS_MOVE = YES;
+                CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+                CLANG_WARN_UNREACHABLE_CODE = YES;
+                CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+                COPY_PHASE_STRIP = NO;
+                DEBUG_INFORMATION_FORMAT = dwarf;
+                ENABLE_NS_ASSERTIONS = YES;
+                ENABLE_STRICT_OBJC_MSGSEND = YES;
+                GCC_C_LANGUAGE_STANDARD = gnu11;
+                GCC_DYNAMIC_NO_PIC = NO;
+                GCC_OPTIMIZATION_LEVEL = 0;
+                GCC_PREPROCESSOR_DEFINITIONS = (
+                    "DEBUG=1",
+                    "$(inherited)",
+                );
+                GCC_SYMBOLS_PRIVATE_EXTERN = NO;
+                MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+                MTL_FAST_MATH = YES;
+                ONLY_ACTIVE_ARCH = YES;
+                SDKROOT = iphoneos;
+                    PRODUCT_BUNDLE_IDENTIFIER = "com.siasoft.vibetalkaudiolab";
+                HEADER_SEARCH_PATHS = ("$(SRCROOT)/VibeTalkAudioLab/DSP/RNNoise",);
+                SWIFT_OBJC_BRIDGING_HEADER = "$(SRCROOT)/VibeTalkAudioLab/VibeTalkAudioLab-Bridging-Header.h";
+                LIBRARY_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/Vendor/DeepFilter";
+                OTHER_LDFLAGS = "$(inherited) -lvibetalk_df_bridge";
+                SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+                SWIFT_EMIT_LOC_STRINGS = YES;
+                SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+                TARGETED_DEVICE_FAMILY = "1,2";
+            };
+            name = Debug;
+        };
+        13C78D552A7D4F8E00F1A2B2 /* Release */ = {
+            isa = XCBuildConfiguration;
+            buildSettings = {
+                ALWAYS_SEARCH_USER_PATHS = NO;
+                CLANG_ANALYZER_NONNULL = YES;
+                CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+                CLANG_CXX_LANGUAGE_STANDARD = "gnu++17";
+                CLANG_CXX_LIBRARY = "libc++";
+                CLANG_ENABLE_MODULES = YES;
+                CLANG_ENABLE_OBJC_ARC = YES;
+                CLANG_ENABLE_OBJC_WEAK = YES;
+                CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+                CLANG_WARN_BOOL_CONVERSION = YES;
+                CLANG_WARN_COMMA = YES;
+                CLANG_WARN_CONSTANT_CONVERSION = YES;
+                CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+                CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+                CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+                CLANG_WARN_EMPTY_BODY = YES;
+                CLANG_WARN_ENUM_CONVERSION = YES;
+                CLANG_WARN_INFINITE_RECURSION = YES;
+                CLANG_WARN_INT_CONVERSION = YES;
+                CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+                CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+                CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+                CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+                CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+                CLANG_WARN_STRICT_PROTOTYPES = YES;
+                CLANG_WARN_SUSPICIOUS_MOVE = YES;
+                CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+                CLANG_WARN_UNREACHABLE_CODE = YES;
+                CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+                COPY_PHASE_STRIP = YES;
+                DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+                ENABLE_NS_ASSERTIONS = NO;
+                ENABLE_STRICT_OBJC_MSGSEND = YES;
+                GCC_C_LANGUAGE_STANDARD = gnu11;
+                GCC_OPTIMIZATION_LEVEL = s;
+                GCC_PREPROCESSOR_DEFINITIONS = (
+                    "$(inherited)",
+                );
+                MTL_ENABLE_DEBUG_INFO = NO;
+                MTL_FAST_MATH = YES;
+                SDKROOT = iphoneos;
+                    PRODUCT_BUNDLE_IDENTIFIER = "com.siasoft.vibetalkaudiolab";
+                HEADER_SEARCH_PATHS = ("$(SRCROOT)/VibeTalkAudioLab/DSP/RNNoise",);
+                SWIFT_OBJC_BRIDGING_HEADER = "$(SRCROOT)/VibeTalkAudioLab/VibeTalkAudioLab-Bridging-Header.h";
+                LIBRARY_SEARCH_PATHS = "$(inherited) $(PROJECT_DIR)/Vendor/DeepFilter";
+                OTHER_LDFLAGS = "$(inherited) -lvibetalk_df_bridge";
+                SWIFT_ACTIVE_COMPILATION_CONDITIONS = "";
+                SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+                TARGETED_DEVICE_FAMILY = "1,2";
+            };
+            name = Release;
+        };
+        13C78D562A7D4F8E00F1A2B2 /* Build configuration list for PBXNativeTarget "VibeTalkAudioLab" */ = {
+            isa = XCConfigurationList;
+            buildConfigurations = (
+                13C78D542A7D4F8E00F1A2B2 /* Debug */,
+                13C78D552A7D4F8E00F1A2B2 /* Release */,
+            );
+            defaultConfigurationIsVisible = 0;
+            defaultConfigurationName = Release;
+        };
+        13C78D302A7D4F8E00F1A2B2 /* Build configuration list for PBXProject "VibeTalkAudioLab" */ = {
+            isa = XCConfigurationList;
+            buildConfigurations = (
+                13C78D542A7D4F8E00F1A2B2 /* Debug */,
+                13C78D552A7D4F8E00F1A2B2 /* Release */,
+            );
+            defaultConfigurationIsVisible = 0;
+            defaultConfigurationName = Release;
+        };
 /* End XCBuildConfiguration section */
 
-/* Begin XCConfigurationList section */
-		600000000000000000000001 /* Build configuration list for PBXNativeTarget "VibeTalkAudioLab" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				600000000000000000000002 /* Debug */,
-				600000000000000000000003 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-		600000000000000000000004 /* Build configuration list for PBXProject "VibeTalkAudioLab" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				600000000000000000000005 /* Debug */,
-				600000000000000000000006 /* Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
-/* End XCConfigurationList section */
+/* Begin XCSwiftPackageProductDependency section */
+        9E0000012A7D4F8E00F1A2B3 /* onnxruntime */ = {
+            isa = XCSwiftPackageProductDependency;
+            package = 9E0000022A7D4F8E00F1A2B3 /* XCRemoteSwiftPackageReference "onnxruntime" */;
+            productName = onnxruntime;
+        };
+/* End XCSwiftPackageProductDependency section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		500000000000000000000001 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/microsoft/onnxruntime-swift-package-manager";
-			requirement = {
-				kind = exactVersion;
-				version = 1.20.0;
-			};
-		};
-		500000000000000000000002 /* XCRemoteSwiftPackageReference "swift-protobuf" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/apple/swift-protobuf.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.0.0;
-			};
-		};
+        13C78D572A7D4F8E00F1A2B3 /* Swift Package Reference */ = {
+            isa = XCRemoteSwiftPackageReference;
+            repositoryURL = "https://github.com/apple/swift-protobuf";
+            requirement = {
+                kind = upToNextMajorVersion;
+                minimumVersion = "1.0.0";
+            };
+        };
+        9E0000022A7D4F8E00F1A2B3 /* XCRemoteSwiftPackageReference "onnxruntime" */ = {
+            isa = XCRemoteSwiftPackageReference;
+            repositoryURL = "https://github.com/microsoft/onnxruntime-swift-package-manager";
+            requirement = {
+                kind = exactVersion;
+                version = "1.20.0";
+            };
+        };
 /* End XCRemoteSwiftPackageReference section */
 
-/* Begin CSwiftPackageProductDependency section */
-		500000000000000000000003 /* onnxruntime */ = {
-			isa = CSwiftPackageProductDependency;
-			package = 500000000000000000000001 /* XCRemoteSwiftPackageReference "onnxruntime-swift-package-manager" */;
-			productName = onnxruntime;
-		};
-		500000000000000000000004 /* SwiftProtobuf */ = {
-			isa = CSwiftPackageProductDependency;
-			package = 500000000000000000000002 /* XCRemoteSwiftPackageReference "swift-protobuf" */;
-			productName = SwiftProtobuf;
-		};
-/* End CSwiftPackageProductDependency section */
-	};
-	rootObject = 111111112640000000000002 /* Project object */;
+    };
+    rootObject = 13C78D2D2A7D4F8E00F1A2B2 /* Project object */;
 }
