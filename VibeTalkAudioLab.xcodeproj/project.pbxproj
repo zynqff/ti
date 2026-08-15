@@ -155,6 +155,10 @@
             );
             mainGroup = 13C78D2C2A7D4F8E00F1A2B2 /* VibeTalkAudioLab */;
             productRefGroup = 13C78D2F2A7D4F8E00F1A2B2 /* Products */; 
+            packageReferences = (
+                13C78D572A7D4F8E00F1A2B3 /* Swift Package Reference */,
+                9E0000022A7D4F8E00F1A2B3 /* XCRemoteSwiftPackageReference "onnxruntime" */,
+            );
             projectDirPath = "";
             projectRoot = "";
             targets = (
