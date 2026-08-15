@@ -52,7 +52,7 @@ private enum ProcessMetrics {
         if result == KERN_SUCCESS, let threadList {
             for i in 0..<Int(threadCount) {
                 var ti = thread_basic_info_data_t()
-                var c = mach_msg_type_number_t(THREAD_BASIC_INFO_COUNT)
+                var c = mach_msg_type_number_t(MemoryLayout<thread_basic_info_data_t>.size / MemoryLayout<integer_t>.size)
                 let kr = withUnsafeMutablePointer(to: &ti) {
                     $0.withMemoryRebound(to: integer_t.self, capacity: Int(c)) {
                         thread_info(threadList[i], thread_flavor_t(THREAD_BASIC_INFO), $0, &c)
