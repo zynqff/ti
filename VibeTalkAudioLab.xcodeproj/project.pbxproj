@@ -32,15 +32,15 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-        13C78D3D2A7D4F8E00F1A2B2 /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioManager.swift; sourceTree = "<group>"; };
-        13C78D3F2A7D4F8E00F1A2B2 /* AudioProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioProcessor.swift; sourceTree = "<group>"; };
-        13C78D412A7D4F8E00F1A2B2 /* BenchmarkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BenchmarkManager.swift; sourceTree = "<group>"; };
-        13C78D432A7D4F8E00F1A2B2 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
-        13C78D452A7D4F8E00F1A2B2 /* ResultsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResultsView.swift; sourceTree = "<group>"; };
-        13C78D472A7D4F8E00F1A2B2 /* BlindTestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BlindTestView.swift; sourceTree = "<group>"; };
-        13C78D492A7D4F8E00F1A2B2 /* ContinuousStreamTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContinuousStreamTest.swift; sourceTree = "<group>"; };
-        13C78D4B2A7D4F8E00F1A2B2 /* AudioUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioUtils.swift; sourceTree = "<group>"; };
-        13C78D4D2A7D4F8E00F1A2B2 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
+        13C78D3D2A7D4F8E00F1A2B2 /* AudioManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VibeTalkAudioLab/AudioManager.swift; sourceTree = SOURCE_ROOT; };
+        13C78D3F2A7D4F8E00F1A2B2 /* AudioProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VibeTalkAudioLab/AudioProcessor.swift; sourceTree = SOURCE_ROOT; };
+        13C78D412A7D4F8E00F1A2B2 /* BenchmarkManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VibeTalkAudioLab/BenchmarkManager.swift; sourceTree = SOURCE_ROOT; };
+        13C78D432A7D4F8E00F1A2B2 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VibeTalkAudioLab/ContentView.swift; sourceTree = SOURCE_ROOT; };
+        13C78D452A7D4F8E00F1A2B2 /* ResultsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VibeTalkAudioLab/ResultsView.swift; sourceTree = SOURCE_ROOT; };
+        13C78D472A7D4F8E00F1A2B2 /* BlindTestView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VibeTalkAudioLab/BlindTestView.swift; sourceTree = SOURCE_ROOT; };
+        13C78D492A7D4F8E00F1A2B2 /* ContinuousStreamTest.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VibeTalkAudioLab/ContinuousStreamTest.swift; sourceTree = SOURCE_ROOT; };
+        13C78D4B2A7D4F8E00F1A2B2 /* AudioUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VibeTalkAudioLab/AudioUtils.swift; sourceTree = SOURCE_ROOT; };
+        13C78D4D2A7D4F8E00F1A2B2 /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VibeTalkAudioLab/App.swift; sourceTree = SOURCE_ROOT; };
         9C0000012A7D4F8E00F1A2B2 /* RNNoiseBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = RNNoiseBridge.h; sourceTree = "<group>"; };
         9B00000012A7D4F8E00F1A2B2 /* RNNoiseBridge.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = RNNoiseBridge.c; sourceTree = "<group>"; };
         9B00000022A7D4F8E00F1A2B2 /* celt_lpc.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = DSP/RNNoise/celt_lpc.c; sourceTree = "<group>"; };
@@ -52,7 +52,7 @@
         9B00000082A7D4F8E00F1A2B2 /* rnn.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = DSP/RNNoise/rnn.c; sourceTree = "<group>"; };
         9B00000092A7D4F8E00F1A2B2 /* rnnoise_tables.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = DSP/RNNoise/rnnoise_tables.c; sourceTree = "<group>"; };
         9B000000A2A7D4F8E00F1A2B2 /* rnnoise_data.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = DSP/RNNoise/rnnoise_data.c; sourceTree = "<group>"; };
-        9B00000C2A7D4F8E00F1A2B2 /* DTLNProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DTLNProcessor.swift; sourceTree = "<group>"; };
+        9B00000C2A7D4F8E00F1A2B2 /* DTLNProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VibeTalkAudioLab/DTLNProcessor.swift; sourceTree = SOURCE_ROOT; };
         9B00000D2A7D4F8E00F1A2B2 /* Models */ = {isa = PBXFileReference; lastKnownFileType = folder; path = Resources/Models; sourceTree = "<group>"; };
         13C78D512A7D4F8E00F1A2B2 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
         13C78D532A7D4F8E00F1A2B2 /* VibeTalkAudioLab.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = VibeTalkAudioLab.app; sourceTree = BUILT_PRODUCTS_DIR; };
