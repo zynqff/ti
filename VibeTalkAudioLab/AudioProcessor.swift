@@ -93,6 +93,16 @@ final class DeepFilterNet3Processor: AudioProcessor {
     let modelName = "DeepFilterNet3"
     private var state: UnsafeMutableRawPointer?
     private var frameSize = 0
+    // FIX #7: device reported "Chunk must be a multiple of 480 samples" on
+    // the final chunk only (494/495 succeeded). DFNet3's native frame size
+    // is fixed at 480 samples, but the benchmark's last chunk is whatever
+    // is left over at the end of the file, which is essentially never an
+    // exact multiple of 480. Buffer samples across calls (same pattern as
+    // DTLN2Processor's pendingInput48k) so every call to vt_df3_process_frame
+    // still gets an exact 480-sample frame; any leftover shorter than one
+    // frame at the very end of the file is simply carried forward and never
+    // needs to satisfy the "multiple of frameSize" requirement on its own.
+    private var pendingInput: [Float] = []
 
     // FIX: same gap as RNNoise above. vt_df3_create() in the Rust bridge can
     // only return NULL via a caught panic; previously that panic message was
@@ -133,6 +143,7 @@ final class DeepFilterNet3Processor: AudioProcessor {
     func reset() {
         guard let state else { return }
         vt_df3_reset(state)
+        pendingInput.removeAll(keepingCapacity: true)
         // vt_df3_reset() never invalidates `state`, but it can still record
         // a failure reason (e.g. re-init failed) via vt_df3_last_error();
         // surface it for diagnostics without touching availability.
@@ -151,11 +162,16 @@ final class DeepFilterNet3Processor: AudioProcessor {
         guard sampleRate == 48000, channels == 1 else { throw AudioProcessorError.unsupportedFormat("DeepFilterNet requires mono 48 kHz") }
         guard let state else { throw AudioProcessorError.unavailable(status) }
         guard frameSize > 0 else { throw AudioProcessorError.nativeFailure("DFNet3 frame length is zero") }
-        let n = chunk.count / 4
-        guard n % frameSize == 0 else { throw AudioProcessorError.invalidInput("Chunk must be a multiple of \(frameSize) samples") }
+
+        pendingInput.append(contentsOf: dataToFloatArray(chunk))
+
+        let framesAvailable = pendingInput.count / frameSize
+        guard framesAvailable > 0 else { return Data() }
+
+        let n = framesAvailable * frameSize
         var out = [Float](repeating: 0, count: n)
-        chunk.withUnsafeBytes { raw in
-            let p = raw.bindMemory(to: Float.self).baseAddress!
+        pendingInput.withUnsafeBufferPointer { pb in
+            let p = pb.baseAddress!
             out.withUnsafeMutableBufferPointer { ob in
                 for off in stride(from: 0, to: n, by: frameSize) {
                     let result = vt_df3_process_frame(state, p.advanced(by: off), ob.baseAddress!.advanced(by: off))
@@ -166,6 +182,7 @@ final class DeepFilterNet3Processor: AudioProcessor {
                 }
             }
         }
+        pendingInput.removeFirst(n)
         return out.withUnsafeBytes { Data($0) }
     }
 }
