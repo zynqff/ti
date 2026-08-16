@@ -67,3 +67,4 @@ void vt_rnnoise_destroy(void *state) {
 const char *vt_rnnoise_last_error(void) {
     return vt_rnnoise_error_buf[0] != '\0' ? vt_rnnoise_error_buf : NULL;
 }
+
