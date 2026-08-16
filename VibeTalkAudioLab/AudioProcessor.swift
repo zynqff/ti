@@ -43,9 +43,26 @@ final class RNNoiseProcessor: AudioProcessor {
         }
     }
 
-    deinit { reset() }
+    deinit { destroy() }
 
+    // FIX #5: BenchmarkManager.runOne() calls processor.reset() right
+    // before EVERY run, including the first one immediately after a
+    // successful init(). The old reset() called vt_rnnoise_destroy() here
+    // and never recreated `state`, so RNNoise always reported
+    // "NOT AVAILABLE" (isAvailable false, but initializationError still nil
+    // because init had actually succeeded) even though it was fully usable.
+    // reset() must only clear RNNoise's internal history, not tear down the
+    // processor. vt_rnnoise_destroy() is now reserved for deinit only.
     func reset() {
+        guard let state else { return }
+        if !vt_rnnoise_reset(state) {
+            if let cMessage = vt_rnnoise_last_error() {
+                initializationError = String(cString: cMessage)
+            }
+        }
+    }
+
+    func destroy() {
         if let s = state { vt_rnnoise_destroy(s) }
         state = nil
     }
@@ -102,8 +119,29 @@ final class DeepFilterNet3Processor: AudioProcessor {
         }
     }
 
-    deinit { reset() }
+    deinit { destroy() }
+
+    // FIX #5: same bug pattern as RNNoiseProcessor above.
+    // BenchmarkManager.runOne() calls processor.reset() right before EVERY
+    // run, including the very first one right after a successful init().
+    // The old reset() called vt_df3_free() here and never recreated
+    // `state`, so DFNet3 always reported "NOT AVAILABLE" even though init
+    // had actually succeeded. vt_df3_reset() already exists in the Rust
+    // bridge for exactly this purpose (reinitialize in place, no free) --
+    // it just wasn't being called. vt_df3_free() is now reserved for
+    // destroy()/deinit only.
     func reset() {
+        guard let state else { return }
+        vt_df3_reset(state)
+        // vt_df3_reset() never invalidates `state`, but it can still record
+        // a failure reason (e.g. re-init failed) via vt_df3_last_error();
+        // surface it for diagnostics without touching availability.
+        if let cMessage = vt_df3_last_error() {
+            initializationError = String(cString: cMessage)
+        }
+    }
+
+    func destroy() {
         if let s = state { vt_df3_free(s) }
         state = nil
         frameSize = 0
