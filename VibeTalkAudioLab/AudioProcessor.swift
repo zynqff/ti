@@ -134,4 +134,3 @@ final class DeepFilterNet3Processor: AudioProcessor {
 
 @inline(__always) func dataToFloatArray(_ data: Data) -> [Float] { guard data.count % 4 == 0 else { return [] }; return data.withUnsafeBytes { Array($0.bindMemory(to: Float.self)) } }
 @inline(__always) func floatArrayToData(_ values: [Float]) -> Data { values.withUnsafeBytes { Data($0) } }
-
