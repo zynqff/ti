@@ -14,18 +14,28 @@ final class DTLN2Processor: AudioProcessor {
     private var env: ORTEnv?
     private var session1: ORTSession?
     private var session2: ORTSession?
-    private var state1: [Float] = []
-    private var state2: [Float] = []
-    private var state1Shape: [NSNumber] = []
-    private var state2Shape: [NSNumber] = []
+
+    // FIX #3: device reported "Missing Input: c1_in" -- this model is an
+    // LSTM, not a GRU, and exposes hidden (h) and cell (c) state as two
+    // SEPARATE inputs per stage, not one combined tensor. Rather than keep
+    // guessing exact input counts/names, every input beyond the first
+    // (the audio/spectrum input) is now treated generically as "some state
+    // tensor that must be round-tripped every frame", keyed by its own name.
+    // This covers h+c today and would also cover a 3rd/4th state tensor
+    // without another guess-and-fail round.
     private var input1Name = ""
-    private var state1Name = ""
-    private var input2Name = ""
-    private var state2Name = ""
     private var maskOutputName = ""
-    private var state1OutputName = ""
+    private var stateNames1: [String] = []
+    private var stateOutputNames1: [String] = []
+    private var states1: [String: [Float]] = [:]
+    private var stateShapes1: [String: [NSNumber]] = [:]
+
+    private var input2Name = ""
     private var blockOutputName = ""
-    private var state2OutputName = ""
+    private var stateNames2: [String] = []
+    private var stateOutputNames2: [String] = []
+    private var states2: [String: [Float]] = [:]
+    private var stateShapes2: [String: [NSNumber]] = [:]
 
     private var inputBuffer = [Float](repeating: 0, count: 512)
     private var outputBuffer = [Float](repeating: 0, count: 512)
@@ -84,8 +94,14 @@ final class DTLN2Processor: AudioProcessor {
         pendingOutput16k.removeAll(keepingCapacity: true)
         pendingInput48k.removeAll(keepingCapacity: true)
         pendingOutput48k.removeAll(keepingCapacity: true)
-        if !state1Shape.isEmpty { state1 = [Float](repeating: 0, count: state1Shape.reduce(1) { $0 * max(1, $1.intValue) }) }
-        if !state2Shape.isEmpty { state2 = [Float](repeating: 0, count: state2Shape.reduce(1) { $0 * max(1, $1.intValue) }) }
+        for name in stateNames1 {
+            let shape = stateShapes1[name] ?? [1, 1, 128]
+            states1[name] = [Float](repeating: 0, count: shape.reduce(1) { $0 * max(1, $1.intValue) })
+        }
+        for name in stateNames2 {
+            let shape = stateShapes2[name] ?? [1, 1, 128]
+            states2[name] = [Float](repeating: 0, count: shape.reduce(1) { $0 * max(1, $1.intValue) })
+        }
     }
 
     func process(chunk: Data, sampleRate: Double, channels: UInt32) throws -> Data {
@@ -147,30 +163,45 @@ final class DTLN2Processor: AudioProcessor {
         let in2 = try s2.inputNames()
         let out2 = try s2.outputNames()
 
+        // Input/output 0 is always the audio/spectrum tensor. Everything
+        // after that is a recurrent state tensor. FIX #3: device reported
+        // "Missing Input: c1_in" -- this is an LSTM with SEPARATE hidden (h)
+        // and cell (c) state inputs per stage, not one combined tensor like
+        // a GRU. Rather than keep hardcoding "exactly one state input",
+        // every extra input/output beyond index 0 is now handled generically
+        // by name, which covers h+c today and any further state tensor
+        // without another guess-and-fail round.
         guard in1.count >= 2, out1.count >= 2, in2.count >= 2, out2.count >= 2 else {
-            throw DTLNError.graph("DTLN requires 2 inputs and 2 outputs per stage")
+            throw DTLNError.graph("DTLN requires a main input plus at least one state input/output per stage")
         }
 
         input1Name = in1[0]
-        state1Name = in1[1]
         maskOutputName = out1[0]
-        state1OutputName = out1[1]
+        stateNames1 = Array(in1.dropFirst())
+        stateOutputNames1 = Array(out1.dropFirst())
+        guard stateOutputNames1.count == stateNames1.count else {
+            throw DTLNError.graph("DTLN stage 1 has \(stateNames1.count) state input(s) but \(stateOutputNames1.count) state output(s) -- can't pair them up by position")
+        }
 
         input2Name = in2[0]
-        state2Name = in2[1]
         blockOutputName = out2[0]
-        state2OutputName = out2[1]
+        stateNames2 = Array(in2.dropFirst())
+        stateOutputNames2 = Array(out2.dropFirst())
+        guard stateOutputNames2.count == stateNames2.count else {
+            throw DTLNError.graph("DTLN stage 2 has \(stateNames2.count) state input(s) but \(stateOutputNames2.count) state output(s) -- can't pair them up by position")
+        }
 
-        // FIX #2: device now reports "Got invalid dimensions for input: h1_in
-        // index: 1 Got: 2 Expected: 1" -- rank was right (3), but the middle
-        // dimension is 1, not 2. So the state tensor is (batch=1, layers=1,
-        // units=128) per input, not 2 layers packed into one tensor. This
-        // model apparently exposes each GRU layer's state as its own input
-        // rather than stacking both layers into a single array.
-        state1Shape = [1, 1, 128]
-        state2Shape = [1, 1, 128]
-        state1 = [Float](repeating: 0, count: 1 * 1 * 128)
-        state2 = [Float](repeating: 0, count: 1 * 1 * 128)
+        // Confirmed via on-device ONNX Runtime errors: each state tensor is
+        // rank-3 with shape (batch=1, layers=1, units=128).
+        let singleStateShape: [NSNumber] = [1, 1, 128]
+        for name in stateNames1 {
+            stateShapes1[name] = singleStateShape
+            states1[name] = [Float](repeating: 0, count: 128)
+        }
+        for name in stateNames2 {
+            stateShapes2[name] = singleStateShape
+            states2[name] = [Float](repeating: 0, count: 128)
+        }
     }
 
     private func process16kShift(_ shift: [Float]) throws {
@@ -189,17 +220,23 @@ final class DTLN2Processor: AudioProcessor {
         }
 
         let magValue = try makeTensor(magnitude, shape: [1, 1, 257])
-        let stateValue = try makeTensor(state1, shape: state1Shape)
-        let result1 = try s1Run([input1Name: magValue, state1Name: stateValue],
-                                outputs: [maskOutputName, state1OutputName])
+        var inputs1: [String: ORTValue] = [input1Name: magValue]
+        for name in stateNames1 {
+            inputs1[name] = try makeTensor(states1[name] ?? [], shape: stateShapes1[name] ?? [1, 1, 128])
+        }
+        let result1 = try s1Run(inputs1, outputs: Set([maskOutputName] + stateOutputNames1))
 
-        guard let maskValue = result1[maskOutputName],
-              let nextState1Value = result1[state1OutputName] else {
-            throw DTLNError.inference("DTLN stage 1 did not return both outputs")
+        guard let maskValue = result1[maskOutputName] else {
+            throw DTLNError.inference("DTLN stage 1 did not return \(maskOutputName)")
+        }
+        for (i, outName) in stateOutputNames1.enumerated() {
+            guard let v = result1[outName] else {
+                throw DTLNError.inference("DTLN stage 1 did not return state output \(outName)")
+            }
+            states1[stateNames1[i]] = try tensorFloats(v)
         }
 
         let mask = try tensorFloats(maskValue)
-        state1 = try tensorFloats(nextState1Value)
         guard mask.count == 257 else {
             throw DTLNError.inference("DTLN stage 1 mask count \(mask.count), expected 257")
         }
