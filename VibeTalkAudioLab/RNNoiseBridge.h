@@ -18,9 +18,13 @@ void vt_rnnoise_destroy(void *state);
 /// call, and must NOT be freed by the caller.
 const char *vt_rnnoise_last_error(void);
 
+/// Reinitializes an existing RNNoise state in place (clears internal RNN /
+/// filter history) WITHOUT freeing it. Safe to call between benchmark runs;
+/// unlike vt_rnnoise_destroy() the returned pointer from vt_rnnoise_create()
+/// stays valid and usable afterwards.
+bool vt_rnnoise_reset(void *state);
+
 #ifdef __cplusplus
 }
 #endif
 #endif
-
-
