@@ -156,3 +156,4 @@ pub extern "C" fn vt_df3_last_error() -> *const c_char {
     }
     std::ptr::null()
 }
+
