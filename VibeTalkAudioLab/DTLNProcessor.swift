@@ -253,17 +253,23 @@ final class DTLN2Processor: AudioProcessor {
 
         let timeBlock = FFT512.inverse(estimated)
         let timeValue = try makeTensor(timeBlock, shape: [1, 1, 512])
-        let state2Value = try makeTensor(state2, shape: state2Shape)
-        let result2 = try s2Run([input2Name: timeValue, state2Name: state2Value],
-                                outputs: [blockOutputName, state2OutputName])
+        var inputs2: [String: ORTValue] = [input2Name: timeValue]
+        for name in stateNames2 {
+            inputs2[name] = try makeTensor(states2[name] ?? [], shape: stateShapes2[name] ?? [1, 1, 128])
+        }
+        let result2 = try s2Run(inputs2, outputs: Set([blockOutputName] + stateOutputNames2))
 
-        guard let outValue = result2[blockOutputName],
-              let nextState2Value = result2[state2OutputName] else {
-            throw DTLNError.inference("DTLN stage 2 did not return both outputs")
+        guard let outValue = result2[blockOutputName] else {
+            throw DTLNError.inference("DTLN stage 2 did not return \(blockOutputName)")
+        }
+        for (i, outName) in stateOutputNames2.enumerated() {
+            guard let v = result2[outName] else {
+                throw DTLNError.inference("DTLN stage 2 did not return state output \(outName)")
+            }
+            states2[stateNames2[i]] = try tensorFloats(v)
         }
 
         let outBlock = try tensorFloats(outValue)
-        state2 = try tensorFloats(nextState2Value)
         guard outBlock.count >= blockLength else {
             throw DTLNError.inference("DTLN stage 2 output has \(outBlock.count), expected >= 512")
         }
