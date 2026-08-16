@@ -161,14 +161,19 @@ final class DTLN2Processor: AudioProcessor {
         blockOutputName = out2[0]
         state2OutputName = out2[1]
 
-        // The reference DTLN ONNX models use external LSTM state with the
-        // fixed shape [1, 2, 128, 2]. The reference implementation allocates
-        // this from the model input shape; keeping it explicit here avoids
-        // depending on package-version-specific metadata APIs.
-        state1Shape = [1, 2, 128, 2]
-        state2Shape = [1, 2, 128, 2]
-        state1 = [Float](repeating: 0, count: 1 * 2 * 128 * 2)
-        state2 = [Float](repeating: 0, count: 1 * 2 * 128 * 2)
+        // FIX: on-device ONNX Runtime rejected the previous 4-D shape with
+        // "Invalid rank for input: h1_in Got: 4 Expected: 3" -- the model's
+        // GRU state input is rank-3, not rank-4. DTLN's stock architecture
+        // uses 2 stacked GRU layers of 128 units per stage, giving
+        // (batch=1, layers=2, units=128). The ObjC ORTSession bindings don't
+        // expose input shape/rank metadata to query this at runtime, so if
+        // this specific shape is still off, ONNX Runtime's next error will
+        // state the exact expected shape (it always does) and this can be
+        // adjusted again from that message.
+        state1Shape = [1, 2, 128]
+        state2Shape = [1, 2, 128]
+        state1 = [Float](repeating: 0, count: 1 * 2 * 128)
+        state2 = [Float](repeating: 0, count: 1 * 2 * 128)
     }
 
     private func process16kShift(_ shift: [Float]) throws {
