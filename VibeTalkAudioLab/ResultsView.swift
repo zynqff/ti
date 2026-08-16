@@ -56,3 +56,4 @@ struct ResultRowView: View {
         }.padding(.vertical, 6)
     }
 }
+
