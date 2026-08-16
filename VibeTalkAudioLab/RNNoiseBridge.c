@@ -68,3 +68,26 @@ const char *vt_rnnoise_last_error(void) {
     return vt_rnnoise_error_buf[0] != '\0' ? vt_rnnoise_error_buf : NULL;
 }
 
+// FIX #5: BenchmarkManager calls processor.reset() right before every run,
+// including the very first one -- immediately after a successful
+// vt_rnnoise_create(). The old RNNoiseProcessor.reset() called
+// vt_rnnoise_destroy() there and never recreated the state, so RNNoise
+// always reported "NOT AVAILABLE" even though init had actually succeeded.
+// This reinitializes the SAME allocation in place (same three steps as
+// vt_rnnoise_create, minus the malloc) so the pointer the Swift side is
+// still holding remains valid and usable.
+bool vt_rnnoise_reset(void *state) {
+    vt_rnnoise_error_buf[0] = '\0';
+    if (!state) {
+        vt_rnnoise_set_error("vt_rnnoise_reset() called with a null state");
+        return false;
+    }
+    int ret = rnnoise_init((DenoiseState *)state, NULL);
+    if (ret != 0) {
+        vt_rnnoise_set_error(
+            "rnnoise_init() failed with code %d during reset (default model weights missing, "
+            "truncated, or incompatible with this build)", ret);
+        return false;
+    }
+    return true;
+}
