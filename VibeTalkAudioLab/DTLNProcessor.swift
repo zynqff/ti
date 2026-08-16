@@ -29,6 +29,15 @@ final class DTLN2Processor: AudioProcessor {
     private var stateOutputNames1: [String] = []
     private var states1: [String: [Float]] = [:]
     private var stateShapes1: [String: [NSNumber]] = [:]
+    // FIX #4: device reported "DTLN stage 1 has 4 state input(s) but 1 state
+    // output(s) -- can't pair them up by position". Inspecting the model
+    // confirmed each stage really does take 4 separate state inputs
+    // (h1_in, c1_in, h2_in, c2_in) but returns them STACKED into a single
+    // output tensor of shape (4, 1, 128) rather than as 4 separate named
+    // outputs. When this stacked layout is detected, stateOutputNames1
+    // holds that one name and stackedStateOutput1 is set so the runner
+    // knows to split it back into per-name slices after every inference.
+    private var stackedStateOutput1: String?
 
     private var input2Name = ""
     private var blockOutputName = ""
@@ -36,6 +45,7 @@ final class DTLN2Processor: AudioProcessor {
     private var stateOutputNames2: [String] = []
     private var states2: [String: [Float]] = [:]
     private var stateShapes2: [String: [NSNumber]] = [:]
+    private var stackedStateOutput2: String?
 
     private var inputBuffer = [Float](repeating: 0, count: 512)
     private var outputBuffer = [Float](repeating: 0, count: 512)
@@ -179,17 +189,15 @@ final class DTLN2Processor: AudioProcessor {
         maskOutputName = out1[0]
         stateNames1 = Array(in1.dropFirst())
         stateOutputNames1 = Array(out1.dropFirst())
-        guard stateOutputNames1.count == stateNames1.count else {
-            throw DTLNError.graph("DTLN stage 1 has \(stateNames1.count) state input(s) but \(stateOutputNames1.count) state output(s) -- can't pair them up by position")
-        }
+        stackedStateOutput1 = try resolveStackedOutput(
+            stateNames: stateNames1, stateOutputNames: stateOutputNames1, stageLabel: "1")
 
         input2Name = in2[0]
         blockOutputName = out2[0]
         stateNames2 = Array(in2.dropFirst())
         stateOutputNames2 = Array(out2.dropFirst())
-        guard stateOutputNames2.count == stateNames2.count else {
-            throw DTLNError.graph("DTLN stage 2 has \(stateNames2.count) state input(s) but \(stateOutputNames2.count) state output(s) -- can't pair them up by position")
-        }
+        stackedStateOutput2 = try resolveStackedOutput(
+            stateNames: stateNames2, stateOutputNames: stateOutputNames2, stageLabel: "2")
 
         // Confirmed via on-device ONNX Runtime errors: each state tensor is
         // rank-3 with shape (batch=1, layers=1, units=128).
@@ -202,6 +210,38 @@ final class DTLN2Processor: AudioProcessor {
             stateShapes2[name] = singleStateShape
             states2[name] = [Float](repeating: 0, count: 128)
         }
+    }
+
+    /// Figures out how a stage's state outputs map onto its state inputs.
+    /// - If counts match 1:1, outputs are paired to inputs by position (old behavior).
+    /// - If there is exactly ONE state output but MULTIPLE state inputs, the
+    ///   model is assumed to stack all states along axis 0 into that single
+    ///   output (shape (N, 1, units)), as confirmed on dtln1/dtln2.onnx.
+    ///   The returned name marks that output as needing to be split back
+    ///   into `stateNames.count` per-name slices after every run.
+    /// - Anything else is a genuine graph mismatch we can't safely handle.
+    private func resolveStackedOutput(stateNames: [String], stateOutputNames: [String], stageLabel: String) throws -> String? {
+        if stateOutputNames.count == stateNames.count {
+            return nil
+        }
+        if stateOutputNames.count == 1, stateNames.count > 1 {
+            return stateOutputNames[0]
+        }
+        throw DTLNError.graph("DTLN stage \(stageLabel) has \(stateNames.count) state input(s) but \(stateOutputNames.count) state output(s) -- can't pair them up by position")
+    }
+
+    /// Splits a stacked state tensor (shape (N, 1, units), flattened to
+    /// N*units floats) back into per-name state slices of `unitsPerState`
+    /// floats each, in the same order as `stateNames`.
+    private func splitStackedState(_ flat: [Float], into stateNames: [String], unitsPerState: Int) -> [String: [Float]] {
+        var result: [String: [Float]] = [:]
+        for (i, name) in stateNames.enumerated() {
+            let start = i * unitsPerState
+            let end = start + unitsPerState
+            guard end <= flat.count else { continue }
+            result[name] = Array(flat[start..<end])
+        }
+        return result
     }
 
     private func process16kShift(_ shift: [Float]) throws {
@@ -229,11 +269,24 @@ final class DTLN2Processor: AudioProcessor {
         guard let maskValue = result1[maskOutputName] else {
             throw DTLNError.inference("DTLN stage 1 did not return \(maskOutputName)")
         }
-        for (i, outName) in stateOutputNames1.enumerated() {
-            guard let v = result1[outName] else {
-                throw DTLNError.inference("DTLN stage 1 did not return state output \(outName)")
+        if let stackedName = stackedStateOutput1 {
+            guard let v = result1[stackedName] else {
+                throw DTLNError.inference("DTLN stage 1 did not return state output \(stackedName)")
             }
-            states1[stateNames1[i]] = try tensorFloats(v)
+            let flat = try tensorFloats(v)
+            let unitsPerState = stateNames1.isEmpty ? 0 : flat.count / stateNames1.count
+            let split = splitStackedState(flat, into: stateNames1, unitsPerState: unitsPerState)
+            guard split.count == stateNames1.count else {
+                throw DTLNError.inference("DTLN stage 1 stacked state output \(stackedName) had \(flat.count) values, expected \(stateNames1.count) x per-state size")
+            }
+            states1 = split
+        } else {
+            for (i, outName) in stateOutputNames1.enumerated() {
+                guard let v = result1[outName] else {
+                    throw DTLNError.inference("DTLN stage 1 did not return state output \(outName)")
+                }
+                states1[stateNames1[i]] = try tensorFloats(v)
+            }
         }
 
         let mask = try tensorFloats(maskValue)
@@ -262,11 +315,24 @@ final class DTLN2Processor: AudioProcessor {
         guard let outValue = result2[blockOutputName] else {
             throw DTLNError.inference("DTLN stage 2 did not return \(blockOutputName)")
         }
-        for (i, outName) in stateOutputNames2.enumerated() {
-            guard let v = result2[outName] else {
-                throw DTLNError.inference("DTLN stage 2 did not return state output \(outName)")
+        if let stackedName = stackedStateOutput2 {
+            guard let v = result2[stackedName] else {
+                throw DTLNError.inference("DTLN stage 2 did not return state output \(stackedName)")
             }
-            states2[stateNames2[i]] = try tensorFloats(v)
+            let flat = try tensorFloats(v)
+            let unitsPerState = stateNames2.isEmpty ? 0 : flat.count / stateNames2.count
+            let split = splitStackedState(flat, into: stateNames2, unitsPerState: unitsPerState)
+            guard split.count == stateNames2.count else {
+                throw DTLNError.inference("DTLN stage 2 stacked state output \(stackedName) had \(flat.count) values, expected \(stateNames2.count) x per-state size")
+            }
+            states2 = split
+        } else {
+            for (i, outName) in stateOutputNames2.enumerated() {
+                guard let v = result2[outName] else {
+                    throw DTLNError.inference("DTLN stage 2 did not return state output \(outName)")
+                }
+                states2[stateNames2[i]] = try tensorFloats(v)
+            }
         }
 
         let outBlock = try tensorFloats(outValue)
