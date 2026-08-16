@@ -305,7 +305,11 @@ final class DTLN2Processor: AudioProcessor {
         }
 
         let timeBlock = FFT512.inverse(estimated)
-        let timeValue = try makeTensor(timeBlock, shape: [1, 1, 512])
+        // FIX #6: device reported "Got invalid dimensions for input: y1 ...
+        // index 1 Got 1 Expected 512, index 2 Got 512 Expected 1". dtln2.onnx's
+        // y1 input is actually shape (1, 512, 1), not (1, 1, 512) -- axes 1
+        // and 2 were swapped.
+        let timeValue = try makeTensor(timeBlock, shape: [1, 512, 1])
         var inputs2: [String: ORTValue] = [input2Name: timeValue]
         for name in stateNames2 {
             inputs2[name] = try makeTensor(states2[name] ?? [], shape: stateShapes2[name] ?? [1, 1, 128])
