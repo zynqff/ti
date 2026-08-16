@@ -46,11 +46,16 @@ final class DTLN2Processor: AudioProcessor {
 
     init() {
         do {
-            guard let p1 = Bundle.main.path(forResource: "dtln1", ofType: "onnx") else {
-                throw DTLNError.modelMissing("dtln1.onnx")
+            // FIX: dtln1.onnx / dtln2.onnx live inside the "Models" folder reference
+            // (blue folder in Xcode -> preserves directory structure in the bundle:
+            // VibeTalkAudioLab.app/Models/dtln1.onnx). Bundle.main.path(forResource:ofType:)
+            // only searches the bundle's TOP LEVEL by default, so without `inDirectory:`
+            // it always returned nil here, even though the file was actually present.
+            guard let p1 = Bundle.main.path(forResource: "dtln1", ofType: "onnx", inDirectory: "Models") else {
+                throw DTLNError.modelMissing("dtln1.onnx (looked in bundle root and Models/)")
             }
-            guard let p2 = Bundle.main.path(forResource: "dtln2", ofType: "onnx") else {
-                throw DTLNError.modelMissing("dtln2.onnx")
+            guard let p2 = Bundle.main.path(forResource: "dtln2", ofType: "onnx", inDirectory: "Models") else {
+                throw DTLNError.modelMissing("dtln2.onnx (looked in bundle root and Models/)")
             }
 
             let e = try ORTEnv(loggingLevel: ORTLoggingLevel.warning)
