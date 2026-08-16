@@ -7,6 +7,11 @@ workflows:
       xcode: latest
       cocoapods: default
     scripts:
+      - name: Clean Rust cache
+        script: |
+          rm -rf DeepFilterBridges/target
+          cargo clean --manifest-path DeepFilterBridges/Cargo.toml || true
+
       - name: Verify models and prepare RNNoise
         script: |
           set -euo pipefail
