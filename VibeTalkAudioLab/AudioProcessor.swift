@@ -6,6 +6,17 @@ protocol AudioProcessor {
     var status: String { get }
     func process(chunk: Data, sampleRate: Double, channels: UInt32) throws -> Data
     func reset()
+    // FIX #9: DFNet3 buffers samples internally until it has a full 480-sample
+    // frame (see pendingInput below), so the last, shorter-than-one-frame tail
+    // of a recording was silently held forever and never emitted -- heard as
+    // eaten word endings, independent of the configured chunk size. flush()
+    // gives a processor a chance to emit that zero-padded tail once the
+    // caller has no more input coming. Default: nothing to flush.
+    func flush() throws -> Data
+}
+
+extension AudioProcessor {
+    func flush() throws -> Data { Data() }
 }
 
 enum AudioProcessorError: LocalizedError {
@@ -67,6 +78,17 @@ final class RNNoiseProcessor: AudioProcessor {
         state = nil
     }
 
+    // FIX #8: RNNoise "seemed to not be doing anything" -- confirmed the
+    // classic Xiph rnnoise_process_frame() expects samples on the 16-bit
+    // PCM scale (~±32768), the convention its RNN was trained on, not
+    // normalized -1...1 float32. vt_rnnoise_process_frame() forwards
+    // whatever it's given straight through with no scaling, and this
+    // Swift side was passing normalized float32 samples directly -- ~32768x
+    // too quiet for the model to see anything but near-silence, so its gain
+    // estimate barely engaged. Scale up by 32768 on the way in and back down
+    // by 1/32768 on the way out; frameSize/off math is unchanged.
+    private static let pcmScale: Float = 32768.0
+
     func process(chunk: Data, sampleRate: Double, channels: UInt32) throws -> Data {
         guard sampleRate == 48000 else { throw AudioProcessorError.unsupportedFormat("RNNoise requires 48 kHz") }
         guard channels == 1 else { throw AudioProcessorError.unsupportedFormat("RNNoise requires mono") }
@@ -75,14 +97,23 @@ final class RNNoiseProcessor: AudioProcessor {
         let n = chunk.count / 4
         var out = [Float](repeating: 0, count: n)
         chunk.withUnsafeBytes { raw in
-            guard let p = raw.bindMemory(to: Float.self).baseAddress else { return }
-            out.withUnsafeMutableBufferPointer { ob in
-                var off = 0
-                while off + frameSize <= n {
-                    _ = vt_rnnoise_process_frame(state, p.advanced(by: off), ob.baseAddress!.advanced(by: off))
-                    off += frameSize
+            guard let src = raw.bindMemory(to: Float.self).baseAddress else { return }
+            // Scratch buffers on the PCM scale RNNoise expects.
+            var scaledIn = [Float](repeating: 0, count: n)
+            for i in 0..<n { scaledIn[i] = src[i] * Self.pcmScale }
+            var scaledOut = [Float](repeating: 0, count: n)
+            scaledIn.withUnsafeBufferPointer { ib in
+                scaledOut.withUnsafeMutableBufferPointer { ob in
+                    var off = 0
+                    while off + frameSize <= n {
+                        _ = vt_rnnoise_process_frame(state, ib.baseAddress!.advanced(by: off), ob.baseAddress!.advanced(by: off))
+                        off += frameSize
+                    }
+                    if off < n { for i in off..<n { ob[i] = ib[i] } }
                 }
-                if off < n { for i in off..<n { ob[i] = p[i] } }
+            }
+            out.withUnsafeMutableBufferPointer { ob in
+                for i in 0..<n { ob[i] = scaledOut[i] / Self.pcmScale }
             }
         }
         return out.withUnsafeBytes { Data($0) }
@@ -184,6 +215,27 @@ final class DeepFilterNet3Processor: AudioProcessor {
         }
         pendingInput.removeFirst(n)
         return out.withUnsafeBytes { Data($0) }
+    }
+
+    // FIX #9: emits the final < frameSize leftover (zero-padded up to
+    // frameSize for the model call, then trimmed back down to the real
+    // leftover length so we don't invent extra audio) instead of losing it.
+    func flush() throws -> Data {
+        guard let state, !pendingInput.isEmpty else { return Data() }
+        let leftover = pendingInput.count
+        var frame = pendingInput
+        frame.append(contentsOf: repeatElement(0, count: frameSize - leftover))
+        var out = [Float](repeating: 0, count: frameSize)
+        frame.withUnsafeBufferPointer { ib in
+            out.withUnsafeMutableBufferPointer { ob in
+                let result = vt_df3_process_frame(state, ib.baseAddress!, ob.baseAddress!)
+                if result.isNaN, let cMessage = vt_df3_last_error() {
+                    NSLog("DFNet3 flush process_frame error: \(String(cString: cMessage))")
+                }
+            }
+        }
+        pendingInput.removeAll(keepingCapacity: true)
+        return Array(out.prefix(leftover)).withUnsafeBytes { Data($0) }
     }
 }
 
