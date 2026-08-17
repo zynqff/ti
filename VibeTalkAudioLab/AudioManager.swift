@@ -4,6 +4,10 @@ import Combine
 class AudioManager: ObservableObject {
     @Published var isRecording = false
     @Published var recordingDuration: TimeInterval = 0
+    // FIX: playAudioFile() used to only `print()` on failure, so a missing/
+    // empty file (e.g. DFNet3's benchmark result not ready yet) looked
+    // exactly like a silently-broken Play button. Now surfaced in the UI.
+    @Published var playbackError: String?
     
     let sampleRate: Double = 48000
     let channels: AVAudioChannelCount = 1
@@ -99,38 +103,54 @@ class AudioManager: ObservableObject {
     }
     
     func playAudioFile(at path: String) {
-        guard !path.isEmpty, FileManager.default.fileExists(atPath: path) else {
-            print("Audio file does not exist: \(path)")
+        playbackError = nil
+
+        // FIX: this used to be a silent `print()`-only early return. Empty
+        // path happens whenever the caller reads `results[.model]?.outputFilePath`
+        // before that model's benchmark entry exists yet (e.g. DFNet3 is the
+        // heaviest/slowest of the three processors and runs last in
+        // BenchmarkManager's list, so it's the one most likely to still be
+        // mid-run -- and therefore missing from `results` -- when a user taps
+        // its Play button). Report it instead of failing invisibly.
+        guard !path.isEmpty else {
+            playbackError = "Ещё нет обработанного файла для этой модели — дождитесь окончания бенчмарка."
             return
         }
-        
+        guard FileManager.default.fileExists(atPath: path) else {
+            playbackError = "Файл результата не найден на диске (возможно, запись WAV не удалась)."
+            return
+        }
+
         let playerNode = AVAudioPlayerNode()
         let audioEngine = AVAudioEngine()
-        
+
         guard let audioFile = try? AVAudioFile(forReading: URL(fileURLWithPath: path)) else {
-            print("Could not open audio file")
+            playbackError = "Не удалось открыть аудиофайл для воспроизведения."
             return
         }
-        
+
         audioEngine.attach(playerNode)
         audioEngine.connect(playerNode, to: audioEngine.mainMixerNode, format: audioFile.processingFormat)
-        
+
         playerNode.scheduleFile(audioFile, at: nil) { [weak self] in
             // Playback finished
         }
-        
+
         do {
             try audioEngine.start()
             playerNode.play()
-            
-            // Auto-stop after playback duration
-            let playbackDuration = audioFile.length / Int64(audioFile.processingFormat.sampleRate)
-            DispatchQueue.main.asyncAfter(deadline: .now() + Double(playbackDuration)) {
+
+            // Auto-stop after playback duration. Round up so short clips
+            // (< 1s) still get an audible window instead of an immediate
+            // `asyncAfter(deadline: .now() + 0)` stop caused by Int64 division
+            // truncating toward zero.
+            let playbackDuration = Double(audioFile.length) / audioFile.processingFormat.sampleRate
+            DispatchQueue.main.asyncAfter(deadline: .now() + max(playbackDuration, 0.1) + 0.1) {
                 playerNode.stop()
                 audioEngine.detach(playerNode)
             }
         } catch {
-            print("Could not start audio playback: \(error)")
+            playbackError = "Не удалось запустить воспроизведение: \(error.localizedDescription)"
         }
     }
 }
