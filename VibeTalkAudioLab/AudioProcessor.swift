@@ -13,10 +13,20 @@ protocol AudioProcessor {
     // gives a processor a chance to emit that zero-padded tail once the
     // caller has no more input coming. Default: nothing to flush.
     func flush() throws -> Data
+    // Optional per-processor failure diagnostics (currently only DFNet3
+    // populates these) so BenchmarkManager/ResultsView can show *why* a
+    // "REAL" run still had audible artifacts, without needing an Xcode
+    // console attached to the device.
+    var failedFrameCount: Int { get }
+    var lastFailureReason: String? { get }
+    var peakAmplitudeOnFailedFrames: Float { get }
 }
 
 extension AudioProcessor {
     func flush() throws -> Data { Data() }
+    var failedFrameCount: Int { 0 }
+    var lastFailureReason: String? { nil }
+    var peakAmplitudeOnFailedFrames: Float { 0 }
 }
 
 enum AudioProcessorError: LocalizedError {
@@ -137,7 +147,15 @@ final class DeepFilterNet3Processor: AudioProcessor {
     // FIX #11: tracks how many frames vt_df3_process_frame() failed on, so
     // the NSLog above stays useful across a whole run instead of an
     // undifferentiated stream of identical messages.
-    private var failedFrameCount = 0
+    // Now exposed (not just logged) so the UI can show the failure rate and
+    // last reason without needing an Xcode console attached to the device.
+    private(set) var failedFrameCount = 0
+    private(set) var lastFailureReason: String?
+    // Peak |amplitude| seen on any frame that failed -- if this sits near or
+    // above 1.0, failures correlate with clipped/near-full-scale input
+    // rather than being random, which points at the recording/gain staging
+    // rather than the model itself.
+    private(set) var peakAmplitudeOnFailedFrames: Float = 0
 
     // FIX: same gap as RNNoise above. vt_df3_create() in the Rust bridge can
     // only return NULL via a caught panic; previously that panic message was
@@ -180,6 +198,8 @@ final class DeepFilterNet3Processor: AudioProcessor {
         vt_df3_reset(state)
         pendingInput.removeAll(keepingCapacity: true)
         failedFrameCount = 0
+        lastFailureReason = nil
+        peakAmplitudeOnFailedFrames = 0
         // vt_df3_reset() never invalidates `state`, but it can still record
         // a failure reason (e.g. re-init failed) via vt_df3_last_error();
         // surface it for diagnostics without touching availability.
@@ -212,23 +232,42 @@ final class DeepFilterNet3Processor: AudioProcessor {
                 for off in stride(from: 0, to: n, by: frameSize) {
                     let result = vt_df3_process_frame(state, p.advanced(by: off), ob.baseAddress!.advanced(by: off))
                     if result.isNaN {
-                        // FIX #11: reported periodic "тт"/"ттт" click/stutter
-                        // artifacts. vt_df3_process_frame() only writes `out`
-                        // on success; on a runtime failure it returns NaN and
-                        // leaves that frame's slice untouched, which here was
-                        // still the zero-initialized `out` buffer -- i.e. a
-                        // hard digital-silence gap of exactly one native
-                        // frame (~10ms), heard as a sharp click/dropout.
-                        // Fall back to passing the original (unprocessed)
-                        // frame through instead of a silent gap: it's far
-                        // less audible than a dropout, and this frame simply
-                        // goes un-denoised rather than corrupting the stream.
+                        // FIX #11 (original): reported periodic "тт"/"ттт"
+                        // click/stutter artifacts. vt_df3_process_frame()
+                        // only writes `out` on success; on a runtime failure
+                        // it returns NaN and leaves that frame's slice
+                        // untouched -- still zero-initialized -- i.e. a hard
+                        // digital-silence gap of exactly one native frame
+                        // (~10ms), heard as a sharp click/dropout. Falling
+                        // back to the raw unprocessed frame fixed the
+                        // dropout, but a hard cut between denoised and raw
+                        // audio is still an audible seam at the frame
+                        // boundary -- exactly the "слово-ттт-слово" pattern,
+                        // since it lands on transient/plosive frames.
+                        //
+                        // FIX #11b: ramp the substituted raw frame in/out
+                        // instead of switching instantaneously, so the level
+                        // and spectral jump is smeared over ~1ms instead of
+                        // happening in a single sample. Doesn't fix *why*
+                        // the model call failed, but makes each failure far
+                        // less audible.
+                        let dst = ob.baseAddress!.advanced(by: off)
+                        let ramp = min(48, frameSize / 4) // ~1ms @ 48kHz
+                        for i in 0..<frameSize {
+                            var gain: Float = 1
+                            if i < ramp { gain = Float(i) / Float(ramp) }
+                            else if i >= frameSize - ramp { gain = Float(frameSize - 1 - i) / Float(ramp) }
+                            dst[i] = p[off + i] * (0.4 + 0.6 * gain)
+                        }
+
                         if let cMessage = vt_df3_last_error() {
                             failedFrameCount += 1
-                            NSLog("DFNet3 process_frame error (frame #\(failedFrameCount), passing through unprocessed): \(String(cString: cMessage))")
+                            lastFailureReason = String(cString: cMessage)
+                            var peak: Float = 0
+                            for i in 0..<frameSize { peak = max(peak, abs(p[off + i])) }
+                            peakAmplitudeOnFailedFrames = max(peakAmplitudeOnFailedFrames, peak)
+                            NSLog("DFNet3 process_frame error (frame #\(failedFrameCount), passing through unprocessed, peak=\(peak)): \(lastFailureReason ?? "")")
                         }
-                        let dst = ob.baseAddress!.advanced(by: off)
-                        for i in 0..<frameSize { dst[i] = p[off + i] }
                     }
                 }
             }
@@ -254,7 +293,8 @@ final class DeepFilterNet3Processor: AudioProcessor {
                     // silent gap on the final frame either.
                     if let cMessage = vt_df3_last_error() {
                         failedFrameCount += 1
-                        NSLog("DFNet3 flush process_frame error (frame #\(failedFrameCount), passing through unprocessed): \(String(cString: cMessage))")
+                        lastFailureReason = String(cString: cMessage)
+                        NSLog("DFNet3 flush process_frame error (frame #\(failedFrameCount), passing through unprocessed): \(lastFailureReason ?? "")")
                     }
                     for i in 0..<frameSize { ob[i] = ib[i] }
                 }
