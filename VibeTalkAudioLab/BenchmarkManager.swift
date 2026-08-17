@@ -21,6 +21,13 @@ struct BenchmarkResult {
     let droppedChunks: Int
     let outputFilePath: String
     let errorMessage: String?
+    // Diagnostics for processors (currently DFNet3) that fall back to
+    // passing raw audio through on individual native-frame failures instead
+    // of erroring the whole run -- lets ResultsView show *why* a "REAL" run
+    // can still have audible artifacts.
+    let nativeFailedFrames: Int
+    let nativeLastFailureReason: String?
+    let nativePeakAmplitudeOnFailedFrames: Float
 }
 
 enum ModelType: CaseIterable, Hashable {
@@ -113,7 +120,8 @@ final class BenchmarkManager: ObservableObject {
                                     ttfa: 0, avgLatency: 0, p50Latency: 0, p95Latency: 0, maxLatency: 0,
                                     fullProcessingTime: 0, rtf: 0, cpuUsage: 0, ramUsage: 0,
                                     processedChunks: 0, totalChunks: Int(ceil(Double(input.count) / Double(chunkFrames))), droppedChunks: 0,
-                                    outputFilePath: "", errorMessage: processor.status)
+                                    outputFilePath: "", errorMessage: processor.status,
+                                    nativeFailedFrames: 0, nativeLastFailureReason: nil, nativePeakAmplitudeOnFailedFrames: 0)
         }
 
         var output = [Float]()
@@ -168,7 +176,9 @@ final class BenchmarkManager: ObservableObject {
                                     cpuUsage: duration > 0 ? max(0, (after.cpuSeconds - before.cpuSeconds) / wall * 100.0) : 0,
                                     ramUsage: Double(after.residentBytes) / 1_048_576.0,
                                     processedChunks: latencies.count, totalChunks: totalChunks, droppedChunks: 0,
-                                    outputFilePath: "", errorMessage: errorMessage)
+                                    outputFilePath: "", errorMessage: errorMessage,
+                                    nativeFailedFrames: processor.failedFrameCount, nativeLastFailureReason: processor.lastFailureReason,
+                                    nativePeakAmplitudeOnFailedFrames: processor.peakAmplitudeOnFailedFrames)
         }
 
         let outputPath = saveWAV(samples: output, sampleRate: sampleRate, modelName: processor.modelName)
@@ -186,15 +196,32 @@ final class BenchmarkManager: ObservableObject {
         // an error so ResultsView's isTrulySuccessful flips to false instead
         // of showing green with a dead Play button.
         let saveFailed = outputPath.isEmpty
+        // FIX: a "REAL" result could still be riddled with per-frame
+        // fallback artifacts (see AudioProcessor.swift FIX #11 /#11b) with
+        // no visible trace anywhere except an Xcode console NSLog. Surface
+        // the failure count/reason here so it reaches ResultsView even when
+        // the device isn't plugged into a Mac.
+        let nativeFails = processor.failedFrameCount
+        let combinedError: String?
+        if saveFailed {
+            combinedError = "Обработка прошла успешно, но запись WAV не удалась — файла для воспроизведения нет."
+        } else if nativeFails > 0 {
+            let peakStr = String(format: "%.2f", processor.peakAmplitudeOnFailedFrames)
+            combinedError = "\(nativeFails) кадр(ов) обработка не смогла денойзнуть и они прошли как есть (слышно как щелчки/«тт»). Пик амплитуды на этих кадрах: \(peakStr). Последняя причина: \(processor.lastFailureReason ?? "н/д")"
+        } else {
+            combinedError = nil
+        }
         return BenchmarkResult(modelType: modelType(for: processor), available: true,
-                               status: saveFailed ? "REAL (no file)" : "REAL",
+                               status: saveFailed ? "REAL (no file)" : (nativeFails > 0 ? "REAL (с артефактами)" : "REAL"),
                                ttfa: firstOutputTime ?? 0, avgLatency: avg, p50Latency: p50, p95Latency: p95,
                                maxLatency: latencies.max() ?? 0, fullProcessingTime: wall,
                                rtf: duration > 0 ? wall / duration : 0, cpuUsage: cpu,
                                ramUsage: Double(after.residentBytes) / 1_048_576.0,
-                               processedChunks: latencies.count, totalChunks: totalChunks, droppedChunks: 0,
+                               processedChunks: latencies.count, totalChunks: totalChunks, droppedChunks: nativeFails,
                                outputFilePath: outputPath,
-                               errorMessage: saveFailed ? "Обработка прошла успешно, но запись WAV не удалась — файла для воспроизведения нет." : nil)
+                               errorMessage: combinedError,
+                               nativeFailedFrames: nativeFails, nativeLastFailureReason: processor.lastFailureReason,
+                               nativePeakAmplitudeOnFailedFrames: processor.peakAmplitudeOnFailedFrames)
     }
 
     private static func readFloatMono(file: AVAudioFile) throws -> [Float] {
