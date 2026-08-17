@@ -4,6 +4,19 @@ struct ContentView: View {
     @StateObject private var audioManager = AudioManager()
     @StateObject private var benchmarkManager = BenchmarkManager()
 
+    // FIX: Play buttons used to be enabled unconditionally, even while
+    // `benchmarkManager.isRunning` was still true. DFNet3 is the heaviest of
+    // the three processors (full neural-net inference per 10ms frame) and
+    // runs last in BenchmarkManager's processor list, so it's the one most
+    // likely to still be mid-run -- and therefore missing from `results` --
+    // when a user, seeing the faster models already finished, taps its Play
+    // button. That produced a silent no-op. Each Play button is now disabled
+    // until its own model's result exists and actually has a file on disk.
+    private func hasPlayableOutput(_ type: ModelType) -> Bool {
+        guard let result = benchmarkManager.results[type] else { return false }
+        return !result.outputFilePath.isEmpty
+    }
+
     var body: some View {
         NavigationView {
             ScrollView {
@@ -27,16 +40,34 @@ struct ContentView: View {
                         .font(.caption).foregroundColor(.secondary)
 
                     Button("Run REAL Benchmark") {
+                        audioManager.playbackError = nil
                         benchmarkManager.runBenchmark(audioManager: audioManager, processors: [RNNoiseProcessor(), DTLN2Processor(), DeepFilterNet3Processor()])
                     }.buttonStyle(.borderedProminent).disabled(audioManager.originalFilePath.isEmpty || benchmarkManager.isRunning)
 
+                    if benchmarkManager.isRunning {
+                        Text("Бенчмарк ещё выполняется — DFNet3 (самая тяжёлая модель) обрабатывается последней, его Play-кнопка станет активна позже остальных.")
+                            .font(.caption2).foregroundColor(.secondary).multilineTextAlignment(.center)
+                    }
+
                     HStack {
                         Button("Original") { audioManager.playAudioFile(at: audioManager.originalFilePath) }
+                            .disabled(audioManager.originalFilePath.isEmpty)
                         Button("RNNoise") { audioManager.playAudioFile(at: benchmarkManager.results[.rnnoise]?.outputFilePath ?? "") }
+                            .disabled(!hasPlayableOutput(.rnnoise))
                     }
                     HStack {
                         Button("DTLN2") { audioManager.playAudioFile(at: benchmarkManager.results[.dtln2]?.outputFilePath ?? "") }
+                            .disabled(!hasPlayableOutput(.dtln2))
                         Button("DFNet3") { audioManager.playAudioFile(at: benchmarkManager.results[.dfnet3]?.outputFilePath ?? "") }
+                            .disabled(!hasPlayableOutput(.dfnet3))
+                    }
+
+                    // FIX: playAudioFile() used to fail silently (console
+                    // `print` only). Any failure -- not-ready result, missing
+                    // file on disk, engine start failure -- now surfaces here.
+                    if let error = audioManager.playbackError {
+                        Text(error)
+                            .font(.footnote).foregroundColor(.red).multilineTextAlignment(.center)
                     }
 
                     NavigationLink("Results", destination: ResultsView(benchmarkManager: benchmarkManager))
