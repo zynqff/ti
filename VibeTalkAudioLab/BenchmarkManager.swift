@@ -178,13 +178,23 @@ final class BenchmarkManager: ObservableObject {
         let p95 = percentile(sorted, 0.95)
         let cpu = wall > 0 ? max(0, (after.cpuSeconds - before.cpuSeconds) / wall * 100.0) : 0
 
-        return BenchmarkResult(modelType: modelType(for: processor), available: true, status: "REAL",
+        // FIX: saveWAV() can return "" (disk full, encoder init failure,
+        // AVAudioFile write error) while every processing step above
+        // succeeded. That used to produce status "REAL" with an empty
+        // outputFilePath -- benchmark looked fully successful, but the Play
+        // button for that model silently had nothing to play. Surface it as
+        // an error so ResultsView's isTrulySuccessful flips to false instead
+        // of showing green with a dead Play button.
+        let saveFailed = outputPath.isEmpty
+        return BenchmarkResult(modelType: modelType(for: processor), available: true,
+                               status: saveFailed ? "REAL (no file)" : "REAL",
                                ttfa: firstOutputTime ?? 0, avgLatency: avg, p50Latency: p50, p95Latency: p95,
                                maxLatency: latencies.max() ?? 0, fullProcessingTime: wall,
                                rtf: duration > 0 ? wall / duration : 0, cpuUsage: cpu,
                                ramUsage: Double(after.residentBytes) / 1_048_576.0,
                                processedChunks: latencies.count, totalChunks: totalChunks, droppedChunks: 0,
-                               outputFilePath: outputPath, errorMessage: nil)
+                               outputFilePath: outputPath,
+                               errorMessage: saveFailed ? "Обработка прошла успешно, но запись WAV не удалась — файла для воспроизведения нет." : nil)
     }
 
     private static func readFloatMono(file: AVAudioFile) throws -> [Float] {
