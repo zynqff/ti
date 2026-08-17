@@ -134,6 +134,10 @@ final class DeepFilterNet3Processor: AudioProcessor {
     // frame at the very end of the file is simply carried forward and never
     // needs to satisfy the "multiple of frameSize" requirement on its own.
     private var pendingInput: [Float] = []
+    // FIX #11: tracks how many frames vt_df3_process_frame() failed on, so
+    // the NSLog above stays useful across a whole run instead of an
+    // undifferentiated stream of identical messages.
+    private var failedFrameCount = 0
 
     // FIX: same gap as RNNoise above. vt_df3_create() in the Rust bridge can
     // only return NULL via a caught panic; previously that panic message was
@@ -175,6 +179,7 @@ final class DeepFilterNet3Processor: AudioProcessor {
         guard let state else { return }
         vt_df3_reset(state)
         pendingInput.removeAll(keepingCapacity: true)
+        failedFrameCount = 0
         // vt_df3_reset() never invalidates `state`, but it can still record
         // a failure reason (e.g. re-init failed) via vt_df3_last_error();
         // surface it for diagnostics without touching availability.
@@ -206,9 +211,24 @@ final class DeepFilterNet3Processor: AudioProcessor {
             out.withUnsafeMutableBufferPointer { ob in
                 for off in stride(from: 0, to: n, by: frameSize) {
                     let result = vt_df3_process_frame(state, p.advanced(by: off), ob.baseAddress!.advanced(by: off))
-                    if result.isNaN, let cMessage = vt_df3_last_error() {
-                        // Surface run-time processing failures too, not just init failures.
-                        NSLog("DFNet3 process_frame error: \(String(cString: cMessage))")
+                    if result.isNaN {
+                        // FIX #11: reported periodic "тт"/"ттт" click/stutter
+                        // artifacts. vt_df3_process_frame() only writes `out`
+                        // on success; on a runtime failure it returns NaN and
+                        // leaves that frame's slice untouched, which here was
+                        // still the zero-initialized `out` buffer -- i.e. a
+                        // hard digital-silence gap of exactly one native
+                        // frame (~10ms), heard as a sharp click/dropout.
+                        // Fall back to passing the original (unprocessed)
+                        // frame through instead of a silent gap: it's far
+                        // less audible than a dropout, and this frame simply
+                        // goes un-denoised rather than corrupting the stream.
+                        if let cMessage = vt_df3_last_error() {
+                            failedFrameCount += 1
+                            NSLog("DFNet3 process_frame error (frame #\(failedFrameCount), passing through unprocessed): \(String(cString: cMessage))")
+                        }
+                        let dst = ob.baseAddress!.advanced(by: off)
+                        for i in 0..<frameSize { dst[i] = p[off + i] }
                     }
                 }
             }
@@ -229,8 +249,14 @@ final class DeepFilterNet3Processor: AudioProcessor {
         frame.withUnsafeBufferPointer { ib in
             out.withUnsafeMutableBufferPointer { ob in
                 let result = vt_df3_process_frame(state, ib.baseAddress!, ob.baseAddress!)
-                if result.isNaN, let cMessage = vt_df3_last_error() {
-                    NSLog("DFNet3 flush process_frame error: \(String(cString: cMessage))")
+                if result.isNaN {
+                    // Same FIX #11 fallback as process(): don't leave a
+                    // silent gap on the final frame either.
+                    if let cMessage = vt_df3_last_error() {
+                        failedFrameCount += 1
+                        NSLog("DFNet3 flush process_frame error (frame #\(failedFrameCount), passing through unprocessed): \(String(cString: cMessage))")
+                    }
+                    for i in 0..<frameSize { ob[i] = ib[i] }
                 }
             }
         }
