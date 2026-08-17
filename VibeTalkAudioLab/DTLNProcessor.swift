@@ -47,10 +47,26 @@ final class DTLN2Processor: AudioProcessor {
     private var stateShapes2: [String: [NSNumber]] = [:]
     private var stackedStateOutput2: String?
 
+    // FIX #10: reported "changes the voice a lot, makes it louder, adds
+    // model-ish artifacts". Root cause: the 48kHz<->16kHz conversion around
+    // DTLN (which only runs at 16kHz) used a 3-tap "(x0+2x1+x2)/4" filter for
+    // decimation and plain linear interpolation for reconstruction -- both
+    // explicitly flagged in the original comments as crude placeholders.
+    // The 3-tap filter has almost no stopband rejection, so energy above the
+    // 16kHz stream's 8kHz Nyquist aliases back down into the audible band
+    // (this is what reads as "changes the voice"/robotic timbre); linear
+    // interpolation leaves spectral images of that already-aliased content
+    // on the way back up to 48kHz (added broadband energy reads as
+    // "louder" + extra artifacts). Replaced both with a shared windowed-sinc
+    // low-pass (cutoff 8kHz @ 48kHz, i.e. the Nyquist of the 16kHz stream)
+    // run as a proper decimator/interpolator with persistent state, so there
+    // are no per-chunk boundary discontinuities either.
+    private var downConverter = RateConverter(numTaps: 65, factor: 3, interpolating: false)
+    private var upConverter = RateConverter(numTaps: 65, factor: 3, interpolating: true)
+
     private var inputBuffer = [Float](repeating: 0, count: 512)
     private var outputBuffer = [Float](repeating: 0, count: 512)
     private var pendingOutput16k: [Float] = []
-    private var pendingInput48k: [Float] = []
     private var pendingOutput48k: [Float] = []
 
     private(set) var initializationError: String?
@@ -102,8 +118,9 @@ final class DTLN2Processor: AudioProcessor {
         inputBuffer = [Float](repeating: 0, count: blockLength)
         outputBuffer = [Float](repeating: 0, count: blockLength)
         pendingOutput16k.removeAll(keepingCapacity: true)
-        pendingInput48k.removeAll(keepingCapacity: true)
         pendingOutput48k.removeAll(keepingCapacity: true)
+        downConverter.reset()
+        upConverter.reset()
         for name in stateNames1 {
             let shape = stateShapes1[name] ?? [1, 1, 128]
             states1[name] = [Float](repeating: 0, count: shape.reduce(1) { $0 * max(1, $1.intValue) })
@@ -128,18 +145,10 @@ final class DTLN2Processor: AudioProcessor {
         let source = dataToFloatArray(chunk)
         guard !source.isEmpty else { return Data() }
 
-        // DTLN is fixed at 16 kHz. The benchmark input is 48 kHz, so use a
-        // deterministic 3:1 conversion. The model itself still receives exact
-        // 512/128-sample 16 kHz blocks.
-        pendingInput48k.append(contentsOf: source)
-        while pendingInput48k.count >= 3 {
-            // A small 3-sample anti-aliasing FIR. This is deliberately simple
-            // and deterministic for the lab; production voice code should use
-            // AVAudioConverter/vDSP with a stateful high-quality resampler.
-            let y = (pendingInput48k[0] + 2.0 * pendingInput48k[1] + pendingInput48k[2]) * 0.25
-            pendingOutput16k.append(y)
-            pendingInput48k.removeFirst(3)
-        }
+        // DTLN is fixed at 16 kHz. The benchmark input is 48 kHz, so convert
+        // with a proper anti-aliased decimator (see RateConverter / FIX #10).
+        // The model itself still receives exact 512/128-sample 16 kHz blocks.
+        pendingOutput16k.append(contentsOf: downConverter.decimate(source))
 
         while pendingOutput16k.count >= blockShift {
             let frame = Array(pendingOutput16k.prefix(blockShift))
@@ -148,7 +157,8 @@ final class DTLN2Processor: AudioProcessor {
         }
 
         // Convert every newly produced 16 kHz sample back to 48 kHz using
-        // linear interpolation. Keep the converter deterministic across chunks.
+        // the same anti-aliased converter (interpolating direction). Keep it
+        // stateful across chunks so there's no discontinuity at boundaries.
         let available = pendingOutput48k.count
         let target = max(0, source.count)
         if available > 0 {
@@ -156,7 +166,7 @@ final class DTLN2Processor: AudioProcessor {
             if take > 0 {
                 let part = Array(pendingOutput48k.prefix(take))
                 pendingOutput48k.removeFirst(take)
-                let up = upsample3(part)
+                let up = upConverter.interpolate(part)
                 return floatArrayToData(up)
             }
         }
@@ -378,29 +388,109 @@ final class DTLN2Processor: AudioProcessor {
     private func normalizeShape(_ shape: [NSNumber]) -> [NSNumber] {
         shape.map { $0.intValue > 0 ? $0 : 1 }
     }
+}
 
-    private func downsampleInput(_ source: [Float]) -> [Float] {
-        var result: [Float] = []
-        result.reserveCapacity(source.count / 3)
-        var i = 0
-        while i + 2 < source.count {
-            result.append((source[i] + 2 * source[i + 1] + source[i + 2]) * 0.25)
-            i += 3
+/// Streaming, anti-aliased sample-rate converter for a fixed integer ratio
+/// (decimate-by-`factor` or interpolate-by-`factor`). See FIX #10: this
+/// replaces DTLN2Processor's earlier 3-tap "(x0+2x1+x2)/4" downsampler and
+/// plain linear-interpolation upsampler, whose poor stopband rejection
+/// (decimation) and imaging (interpolation) directly caused the reported
+/// voice-changing / loudness / artifact symptoms, since 48kHz<->16kHz
+/// conversion runs on every sample DTLN ever sees or produces. Uses a
+/// windowed-sinc low-pass FIR (Hamming window, cutoff at Fs_48k/(2*factor),
+/// i.e. the Nyquist of the 16kHz stream), implemented as a direct-form
+/// decimator / polyphase interpolator so per-call cost stays proportional to
+/// the amount of audio processed, not the filter length times the ratio.
+/// Keeps a persistent delay line so there are no discontinuities at chunk
+/// boundaries -- call reset() to clear it (e.g. between benchmark runs).
+private final class RateConverter {
+    private let factor: Int
+    private let interpolating: Bool
+    private let taps: [Float]           // direct-form taps (decimation only)
+    private let polyTaps: [[Float]]     // polyphase subfilters (interpolation only)
+    private var history: [Float]        // decimation: raw sample delay line
+    private var ldelay: [Float]         // interpolation: low-rate sample delay line
+    private var phase = 0               // decimation: counts input samples 0..<factor
+
+    init(numTaps: Int, factor: Int, interpolating: Bool) {
+        self.factor = factor
+        self.interpolating = interpolating
+
+        let n = numTaps % 2 == 0 ? numTaps + 1 : numTaps
+        let m = n - 1
+        let center = m / 2
+        let wc = Float.pi / Float(factor) // cutoff = Fs/(2*factor)
+        var h = [Float](repeating: 0, count: n)
+        var sum: Float = 0
+        for i in 0..<n {
+            let k = i - center
+            let sinc: Float = (k == 0) ? (wc / Float.pi) : sinf(wc * Float(k)) / (Float.pi * Float(k))
+            let window = 0.54 - 0.46 * cosf(2 * Float.pi * Float(i) / Float(m)) // Hamming
+            h[i] = sinc * window
+            sum += h[i]
         }
-        return result
+        let gain: Float = interpolating ? Float(factor) : 1 // compensate zero-stuffing loss
+        for i in 0..<n { h[i] = h[i] / sum * gain }
+
+        if interpolating {
+            let subtapCount = Int(ceil(Double(n) / Double(factor)))
+            var padded = h
+            padded.append(contentsOf: repeatElement(0, count: subtapCount * factor - n))
+            polyTaps = (0..<factor).map { p in (0..<subtapCount).map { k in padded[p + k * factor] } }
+            taps = []
+            ldelay = [Float](repeating: 0, count: subtapCount)
+            history = []
+        } else {
+            taps = h
+            polyTaps = []
+            history = [Float](repeating: 0, count: n)
+            ldelay = []
+        }
     }
 
-    private func upsample3(_ x: [Float]) -> [Float] {
-        guard !x.isEmpty else { return [] }
-        var y = [Float](repeating: 0, count: x.count * 3)
-        for i in 0..<x.count {
-            let a = x[i]
-            let b = i + 1 < x.count ? x[i + 1] : a
-            y[i * 3] = a
-            y[i * 3 + 1] = a + (b - a) / 3
-            y[i * 3 + 2] = a + 2 * (b - a) / 3
+    func reset() {
+        for i in 0..<history.count { history[i] = 0 }
+        for i in 0..<ldelay.count { ldelay[i] = 0 }
+        phase = 0
+    }
+
+    /// Filters and decimates `input` (at the higher rate) by `factor`.
+    func decimate(_ input: [Float]) -> [Float] {
+        guard !interpolating else { return [] }
+        var output: [Float] = []
+        output.reserveCapacity(input.count / factor + 1)
+        for x in input {
+            history.removeFirst()
+            history.append(x)
+            phase += 1
+            if phase == factor {
+                phase = 0
+                var acc: Float = 0
+                for i in 0..<taps.count { acc += taps[i] * history[i] }
+                output.append(acc)
+            }
         }
-        return y
+        return output
+    }
+
+    /// Filters and upsamples `input` (at the lower rate) by `factor`, using a
+    /// polyphase decomposition of the same low-pass filter (equivalent to
+    /// zero-stuffing + filtering, without wasting multiplies on the zeros).
+    func interpolate(_ input: [Float]) -> [Float] {
+        guard interpolating else { return [] }
+        var output: [Float] = []
+        output.reserveCapacity(input.count * factor)
+        for x in input {
+            ldelay.removeFirst()
+            ldelay.append(x)
+            for p in 0..<factor {
+                let hp = polyTaps[p]
+                var acc: Float = 0
+                for k in 0..<hp.count { acc += hp[k] * ldelay[ldelay.count - 1 - k] }
+                output.append(acc)
+            }
+        }
+        return output
     }
 }
 
