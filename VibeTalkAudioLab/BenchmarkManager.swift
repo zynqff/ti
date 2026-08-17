@@ -144,6 +144,23 @@ final class BenchmarkManager: ObservableObject {
         let wall = CFAbsoluteTimeGetCurrent() - wallStart
         let after = ProcessMetrics.snapshot()
 
+        // FIX #9: give processors that buffer partial frames internally
+        // (currently DeepFilterNet3Processor) a chance to emit their final,
+        // shorter-than-one-frame tail instead of silently dropping it --
+        // previously heard as eaten word endings on every run.
+        if errorMessage == nil {
+            do {
+                let tail = try processor.flush()
+                let values = dataToFloatArray(tail)
+                if !values.isEmpty {
+                    if firstOutputTime == nil { firstOutputTime = CFAbsoluteTimeGetCurrent() - wallStart }
+                    output.append(contentsOf: values)
+                }
+            } catch {
+                errorMessage = error.localizedDescription
+            }
+        }
+
         guard errorMessage == nil else {
             return BenchmarkResult(modelType: modelType(for: processor), available: true, status: "FAILED", ttfa: 0,
                                     avgLatency: 0, p50Latency: 0, p95Latency: 0, maxLatency: 0, fullProcessingTime: wall,
