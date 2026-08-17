@@ -39,7 +39,8 @@ struct ResultRowView: View {
                 Text("Avg / P50 / P95 / Max: \(String(format: "%.2f / %.2f / %.2f / %.2f ms", result.avgLatency * 1000, result.p50Latency * 1000, result.p95Latency * 1000, result.maxLatency * 1000))")
                 Text("Full: \(String(format: "%.3f s", result.fullProcessingTime)) • RTF: \(String(format: "%.3f", result.rtf))")
                 Text("CPU: \(String(format: "%.1f%%", result.cpuUsage)) • RAM: \(String(format: "%.0f MB", result.ramUsage))")
-                Text("Chunks: \(result.processedChunks)/\(result.totalChunks)")
+                Text("Chunks: \(result.processedChunks)/\(result.totalChunks)"
+                     + (result.droppedChunks > 0 ? " • native-уровня сбоев: \(result.droppedChunks)" : ""))
             }
             // FIX: previously this was `else if let error = result.errorMessage`,
             // so whenever `available == true` (model loaded fine but failed
