@@ -22,6 +22,8 @@ workflows:
             -DGGML_NATIVE=OFF \
             -DBUILD_SHARED_LIBS=OFF \
             -DGGML_BACKEND_DL=OFF \
+            -DGGML_METAL=OFF \
+            -DGGML_BLAS=OFF \
             -DLLAMA_BUILD_EXAMPLES=OFF \
             -DLLAMA_BUILD_TESTS=OFF \
             -DLLAMA_BUILD_SERVER=OFF
