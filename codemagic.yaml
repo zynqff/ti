@@ -1,16 +1,35 @@
 workflows:
   build-xcframework:
-    name: Build llama.xcframework (STQ_0)
+    name: Build llama.xcframework (iOS Only)
     instance_type: mac_mini_m2
     scripts:
       - name: Checkout STQ_0 branch
         script: |
           git clone -b STQ_0 https://github.com/sjl623/llama.cpp.git
-          cd llama.cpp
-      - name: Build xcframework
+      - name: Build iOS Device Only
         script: |
           cd llama.cpp
-          chmod +x build-xcframework.sh
-          ./build-xcframework.sh
+          
+          # 1. Конфигурируем CMake строго под iOS Device (arm64)
+          cmake -B build-ios-device \
+            -G Xcode \
+            -DCMAKE_SYSTEM_NAME=iOS \
+            -DCMAKE_OSX_SYSROOT=iphoneos \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DCMAKE_SYSTEM_PROCESSOR=arm64 \
+            -DGGML_NATIVE=OFF \
+            -DBUILD_SHARED_LIBS=OFF
+
+          # 2. Собираем проект
+          cmake --build build-ios-device --config Release --parallel
+
+          # 3. Упаковываем собранные библиотеки в xcframework
+          mkdir -p build-apple
+          xcodebuild -create-xcframework \
+            -library build-ios-device/Release-iphoneos/libllama.a \
+            -headers include \
+            -library build-ios-device/ggml/src/Release-iphoneos/libggml.a \
+            -headers ggml/include \
+            -output build-apple/llama.xcframework
     artifacts:
       - llama.cpp/build-apple/llama.xcframework
