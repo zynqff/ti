@@ -10,7 +10,7 @@ workflows:
         script: |
           cd llama.cpp
           
-          # 1. Конфигурируем CMake строго под iOS Device (arm64)
+          # 1. Конфигурируем CMake строго для библиотеки (без примеров и тестов)
           cmake -B build-ios-device \
             -G Xcode \
             -DCMAKE_SYSTEM_NAME=iOS \
@@ -18,12 +18,16 @@ workflows:
             -DCMAKE_OSX_ARCHITECTURES=arm64 \
             -DCMAKE_SYSTEM_PROCESSOR=arm64 \
             -DGGML_NATIVE=OFF \
-            -DBUILD_SHARED_LIBS=OFF
+            -DBUILD_SHARED_LIBS=OFF \
+            -DLLAMA_BUILD_EXAMPLES=OFF \
+            -DLLAMA_BUILD_TESTS=OFF \
+            -DLLAMA_BUILD_SERVER=OFF
 
-          # 2. Собираем проект
-          cmake --build build-ios-device --config Release --parallel
+          # 2. Собираем только статические библиотеки ggml и llama
+          cmake --build build-ios-device --config Release --target llama --parallel
+          cmake --build build-ios-device --config Release --target ggml --parallel
 
-          # 3. Упаковываем собранные библиотеки в xcframework
+          # 3. Упаковываем в xcframework
           mkdir -p build-apple
           xcodebuild -create-xcframework \
             -library build-ios-device/Release-iphoneos/libllama.a \
