@@ -6,12 +6,13 @@ workflows:
       - name: Checkout STQ_0 branch
         script: |
           git clone -b STQ_0 https://github.com/sjl623/llama.cpp.git
+
       - name: Build iOS Device Only
         script: |
           set -e
           cd llama.cpp
 
-          # 1. Конфигурируем CMake под iOS Device (без примеров, тестов и сервера)
+          # 1. Конфигурация CMake для iOS Device
           cmake -B build-ios-device \
             -G Xcode \
             -DCMAKE_SYSTEM_NAME=iOS \
@@ -24,23 +25,26 @@ workflows:
             -DLLAMA_BUILD_TESTS=OFF \
             -DLLAMA_BUILD_SERVER=OFF
 
-          # 2. Собираем таргети llama и ggml
+          # 2. Сборка библиотек
           cmake --build build-ios-device --config Release --target llama --parallel
 
-          # 3. Находим точные пути к собранным файлам .a
+          # 3. Поиск скомпилированных статиков .a
           LLAMA_LIB=$(find build-ios-device -name "libllama.a" | grep "Release-iphoneos" | head -n 1)
           GGML_LIB=$(find build-ios-device -name "libggml.a" | grep "Release-iphoneos" | head -n 1)
 
-          echo "LLAMA_LIB found at: $LLAMA_LIB"
-          echo "GGML_LIB found at: $GGML_LIB"
+          echo "Found LLAMA_LIB: $LLAMA_LIB"
+          echo "Found GGML_LIB: $GGML_LIB"
 
-          # 4. Упаковываем библиотеки в xcframework
+          # 4. Объединение libllama.a и libggml.a в единую библиотеку для одной архитектуры
+          mkdir -p build-ios-device/combined
+          libtool -static -o build-ios-device/combined/libllama_combined.a "$LLAMA_LIB" "$GGML_LIB"
+
+          # 5. Упаковка в XCFramework
           mkdir -p build-apple
           xcodebuild -create-xcframework \
-            -library "$LLAMA_LIB" \
+            -library build-ios-device/combined/libllama_combined.a \
             -headers include \
-            -library "$GGML_LIB" \
-            -headers ggml/include \
             -output build-apple/llama.xcframework
+
     artifacts:
       - llama.cpp/build-apple/llama.xcframework
