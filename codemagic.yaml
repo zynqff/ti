@@ -21,6 +21,7 @@ workflows:
             -DCMAKE_SYSTEM_PROCESSOR=arm64 \
             -DGGML_NATIVE=OFF \
             -DBUILD_SHARED_LIBS=OFF \
+            -DGGML_BACKEND_DL=OFF \
             -DLLAMA_BUILD_EXAMPLES=OFF \
             -DLLAMA_BUILD_TESTS=OFF \
             -DLLAMA_BUILD_SERVER=OFF
@@ -31,19 +32,42 @@ workflows:
           # 3. Поиск скомпилированных статиков .a
           LLAMA_LIB=$(find build-ios-device -name "libllama.a" | grep "Release-iphoneos" | head -n 1)
           GGML_LIB=$(find build-ios-device -name "libggml.a" | grep "Release-iphoneos" | head -n 1)
+          GGML_BASE_LIB=$(find build-ios-device -name "libggml-base.a" | grep "Release-iphoneos" | head -n 1)
+          GGML_CPU_LIB=$(find build-ios-device -name "libggml-cpu.a" | grep "Release-iphoneos" | head -n 1)
 
           echo "Found LLAMA_LIB: $LLAMA_LIB"
           echo "Found GGML_LIB: $GGML_LIB"
+          echo "Found GGML_BASE_LIB: $GGML_BASE_LIB"
+          echo "Found GGML_CPU_LIB: $GGML_CPU_LIB"
 
-          # 4. Объединение libllama.a и libggml.a в единую библиотеку для одной архитектуры
+          if [ -z "$LLAMA_LIB" ] || [ -z "$GGML_LIB" ] || [ -z "$GGML_BASE_LIB" ] || [ -z "$GGML_CPU_LIB" ]; then
+            echo "ERROR: не найдена одна из статических библиотек — проверьте вывод find выше"
+            exit 1
+          fi
+
+          # 4. Объединение всех .a в единую библиотеку для одной архитектуры
           mkdir -p build-ios-device/combined
-          libtool -static -o build-ios-device/combined/libllama_combined.a "$LLAMA_LIB" "$GGML_LIB"
+          libtool -static -o build-ios-device/combined/libllama_combined.a \
+            "$LLAMA_LIB" "$GGML_LIB" "$GGML_BASE_LIB" "$GGML_CPU_LIB"
 
-          # 5. Упаковка в XCFramework
+          # 5. Сборка единой папки заголовков (llama/* + ggml/*)
+          mkdir -p build-apple/merged-headers
+          cp include/*.h build-apple/merged-headers/
+          cp ggml/include/*.h build-apple/merged-headers/
+
+          # 6. modulemap кладём прямо сюда — xcodebuild скопирует его вместе с заголовками
+          cat > build-apple/merged-headers/module.modulemap <<'EOF'
+          module llama {
+              header "llama.h"
+              export *
+          }
+          EOF
+
+          # 7. Упаковка в XCFramework
           mkdir -p build-apple
           xcodebuild -create-xcframework \
             -library build-ios-device/combined/libllama_combined.a \
-            -headers include \
+            -headers build-apple/merged-headers \
             -output build-apple/llama.xcframework
 
     artifacts:
