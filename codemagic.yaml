@@ -1,0 +1,16 @@
+workflows:
+  build-xcframework:
+    name: Build llama.xcframework (STQ_0)
+    instance_type: mac_mini_m2
+    scripts:
+      - name: Checkout STQ_0 branch
+        script: |
+          git clone -b STQ_0 https://github.com/sjl623/llama.cpp.git
+          cd llama.cpp
+      - name: Build xcframework
+        script: |
+          cd llama.cpp
+          chmod +x build-xcframework.sh
+          ./build-xcframework.sh
+    artifacts:
+      - llama.cpp/build-apple/llama.xcframework
