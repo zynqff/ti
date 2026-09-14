@@ -2,17 +2,98 @@ workflows:
   build-xcframework:
     name: Build llama.xcframework (iOS Only)
     instance_type: mac_mini_m2
+
     scripts:
+
+      # 1. Клонируем ветку с поддержкой STQ1_0
       - name: Checkout STQ_0 branch
         script: |
+          set -e
+
           git clone -b STQ_0 https://github.com/sjl623/llama.cpp.git
 
-      - name: Build iOS Device Only
-        script: |
-          set -e
           cd llama.cpp
 
-          # 1. Конфигурация CMake для iOS Device
+          echo "=== llama.cpp commit ==="
+          git rev-parse HEAD
+          git log -1 --oneline
+
+          echo "=== STQ1_0 search ==="
+          grep -R "ggml_vec_dot_stq1_0_q8_K" -n ggml/src/ggml-cpu || true
+
+
+      # 2. Принудительно используем generic STQ1_0
+      - name: Force generic STQ1_0 kernel
+        script: |
+          set -e
+
+          cd llama.cpp
+
+          python3 - <<'PY'
+          from pathlib import Path
+
+          candidates = [
+              Path("ggml/src/ggml-cpu/ggml-cpu.c"),
+              Path("ggml/src/ggml-cpu/ggml-cpu.cpp"),
+          ]
+
+          target = None
+
+          for p in candidates:
+              if p.exists():
+                  text = p.read_text()
+                  if "ggml_vec_dot_stq1_0_q8_K" in text:
+                      target = p
+                      break
+
+          if target is None:
+              raise SystemExit(
+                  "ERROR: Could not find STQ1_0 CPU dispatch file"
+              )
+
+          print(f"Using dispatch file: {target}")
+
+          text = target.read_text()
+
+          old = ".vec_dot = ggml_vec_dot_stq1_0_q8_K,"
+          new = ".vec_dot = ggml_vec_dot_stq1_0_q8_K_generic,"
+
+          if old not in text:
+              print("STQ1_0 dispatch line was not found exactly.")
+
+              print("\nRelevant lines:")
+              for line in text.splitlines():
+                  if "stq1_0" in line.lower():
+                      print(line)
+
+              raise SystemExit(
+                  "ERROR: Expected STQ1_0 dispatch pattern not found"
+              )
+
+          text = text.replace(old, new, 1)
+
+          target.write_text(text)
+
+          print("SUCCESS:")
+          print("STQ1_0 now uses ggml_vec_dot_stq1_0_q8_K_generic")
+
+          print("\nVerification:")
+          for line in text.splitlines():
+              if "stq1_0" in line.lower() and "vec_dot" in line.lower():
+                  print(line)
+          PY
+
+
+      # 3. Конфигурация CMake для iOS Device
+      - name: Configure iOS Device
+        script: |
+          set -e
+
+          cd llama.cpp
+
+          rm -rf build-ios-device
+          rm -rf build-apple
+
           cmake -B build-ios-device \
             -G Xcode \
             -DCMAKE_SYSTEM_NAME=iOS \
@@ -28,36 +109,127 @@ workflows:
             -DLLAMA_BUILD_TESTS=OFF \
             -DLLAMA_BUILD_SERVER=OFF
 
-          # 2. Сборка библиотек
-          cmake --build build-ios-device --config Release --target llama --parallel
 
-          # 3. Поиск скомпилированных статиков .a
-          LLAMA_LIB=$(find build-ios-device -name "libllama.a" | grep "Release-iphoneos" | head -n 1)
-          GGML_LIB=$(find build-ios-device -name "libggml.a" | grep "Release-iphoneos" | head -n 1)
-          GGML_BASE_LIB=$(find build-ios-device -name "libggml-base.a" | grep "Release-iphoneos" | head -n 1)
-          GGML_CPU_LIB=$(find build-ios-device -name "libggml-cpu.a" | grep "Release-iphoneos" | head -n 1)
+      # 4. Сборка llama
+      - name: Build llama for iOS
+        script: |
+          set -e
 
-          echo "Found LLAMA_LIB: $LLAMA_LIB"
-          echo "Found GGML_LIB: $GGML_LIB"
-          echo "Found GGML_BASE_LIB: $GGML_BASE_LIB"
-          echo "Found GGML_CPU_LIB: $GGML_CPU_LIB"
+          cd llama.cpp
 
-          if [ -z "$LLAMA_LIB" ] || [ -z "$GGML_LIB" ] || [ -z "$GGML_BASE_LIB" ] || [ -z "$GGML_CPU_LIB" ]; then
-            echo "ERROR: не найдена одна из статических библиотек — проверьте вывод find выше"
+          cmake --build build-ios-device \
+            --config Release \
+            --target llama \
+            --parallel
+
+
+      # 5. Проверяем созданные статические библиотеки
+      - name: Find static libraries
+        script: |
+          set -e
+
+          cd llama.cpp
+
+          echo "=== Searching for static libraries ==="
+
+          find build-ios-device \
+            -name "libllama.a" \
+            -o -name "libggml.a" \
+            -o -name "libggml-base.a" \
+            -o -name "libggml-cpu.a"
+
+
+      # 6. Объединяем все .a в одну библиотеку
+      - name: Combine static libraries
+        script: |
+          set -e
+
+          cd llama.cpp
+
+          LLAMA_LIB=$(find build-ios-device \
+            -name "libllama.a" \
+            | grep "Release-iphoneos" \
+            | head -n 1)
+
+          GGML_LIB=$(find build-ios-device \
+            -name "libggml.a" \
+            | grep "Release-iphoneos" \
+            | head -n 1)
+
+          GGML_BASE_LIB=$(find build-ios-device \
+            -name "libggml-base.a" \
+            | grep "Release-iphoneos" \
+            | head -n 1)
+
+          GGML_CPU_LIB=$(find build-ios-device \
+            -name "libggml-cpu.a" \
+            | grep "Release-iphoneos" \
+            | head -n 1)
+
+          echo "Found:"
+          echo "LLAMA_LIB     = $LLAMA_LIB"
+          echo "GGML_LIB      = $GGML_LIB"
+          echo "GGML_BASE_LIB = $GGML_BASE_LIB"
+          echo "GGML_CPU_LIB  = $GGML_CPU_LIB"
+
+          if [ -z "$LLAMA_LIB" ]; then
+            echo "ERROR: libllama.a not found"
             exit 1
           fi
 
-          # 4. Объединение всех .a в единую библиотеку для одной архитектуры
+          if [ -z "$GGML_LIB" ]; then
+            echo "ERROR: libggml.a not found"
+            exit 1
+          fi
+
+          if [ -z "$GGML_BASE_LIB" ]; then
+            echo "ERROR: libggml-base.a not found"
+            exit 1
+          fi
+
+          if [ -z "$GGML_CPU_LIB" ]; then
+            echo "ERROR: libggml-cpu.a not found"
+            exit 1
+          fi
+
           mkdir -p build-ios-device/combined
-          libtool -static -o build-ios-device/combined/libllama_combined.a \
-            "$LLAMA_LIB" "$GGML_LIB" "$GGML_BASE_LIB" "$GGML_CPU_LIB"
 
-          # 5. Сборка единой папки заголовков (llama/* + ggml/*)
+          libtool -static \
+            -o build-ios-device/combined/libllama_combined.a \
+            "$LLAMA_LIB" \
+            "$GGML_LIB" \
+            "$GGML_BASE_LIB" \
+            "$GGML_CPU_LIB"
+
+          echo "=== Combined library ==="
+
+          ls -lh \
+            build-ios-device/combined/libllama_combined.a
+
+
+      # 7. Собираем заголовки
+      - name: Prepare headers
+        script: |
+          set -e
+
+          cd llama.cpp
+
           mkdir -p build-apple/merged-headers
-          cp include/*.h build-apple/merged-headers/
-          cp ggml/include/*.h build-apple/merged-headers/
 
-          # 6. modulemap кладём прямо сюда — xcodebuild скопирует его вместе с заголовками
+          cp include/*.h \
+            build-apple/merged-headers/
+
+          cp ggml/include/*.h \
+            build-apple/merged-headers/
+
+
+      # 8. Создаём modulemap
+      - name: Create modulemap
+        script: |
+          set -e
+
+          cd llama.cpp
+
           cat > build-apple/merged-headers/module.modulemap <<'EOF'
           module llama {
               header "llama.h"
@@ -65,12 +237,52 @@ workflows:
           }
           EOF
 
-          # 7. Упаковка в XCFramework
-          mkdir -p build-apple
+          echo "=== module.modulemap ==="
+          cat build-apple/merged-headers/module.modulemap
+
+
+      # 9. Создаём XCFramework
+      - name: Create XCFramework
+        script: |
+          set -e
+
+          cd llama.cpp
+
+          rm -rf build-apple/llama.xcframework
+
           xcodebuild -create-xcframework \
             -library build-ios-device/combined/libllama_combined.a \
             -headers build-apple/merged-headers \
             -output build-apple/llama.xcframework
+
+          echo "=== XCFramework created ==="
+
+          find build-apple/llama.xcframework \
+            -maxdepth 3 \
+            -type f \
+            -print
+
+
+      # 10. Финальная проверка архитектуры
+      - name: Verify XCFramework
+        script: |
+          set -e
+
+          cd llama.cpp
+
+          echo "=== XCFramework ==="
+          ls -lh build-apple/llama.xcframework
+
+          echo "=== Combined library architecture ==="
+          lipo -info \
+            build-ios-device/combined/libllama_combined.a || true
+
+          echo "=== Check STQ1_0 symbols ==="
+          nm -gU \
+            build-ios-device/combined/libllama_combined.a \
+            | grep -i "stq1_0" \
+            | head -n 50 || true
+
 
     artifacts:
       - llama.cpp/build-apple/llama.xcframework
