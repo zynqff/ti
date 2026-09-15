@@ -1,143 +1,83 @@
 workflows:
+
   build-xcframework:
-    name: Build llama.xcframework (iOS Only)
+    name: Build llama.xcframework (iOS arm64 + Metal)
     instance_type: mac_mini_m2
+    max_build_duration: 60
+
+    environment:
+      xcode: latest
 
     scripts:
 
-      # ---------------------------------------------------------
-      # 1. Clone llama.cpp STQ_0 branch
-      # ---------------------------------------------------------
-      - name: Checkout STQ_0 branch
+      # =========================================================
+      # 1. Checkout llama.cpp with Q2_0c / HY-MT2 2-bit support
+      # =========================================================
+      - name: Checkout Q2_0c llama.cpp
         script: |
           set -e
 
-          git clone -b STQ_0 https://github.com/sjl623/llama.cpp.git
+          echo "========================================"
+          echo "Cloning llama.cpp Q2_0c runtime"
+          echo "========================================"
+
+          git clone --branch pr-19357-sme2-int2 --single-branch \
+            https://github.com/sjl623/llama.cpp.git llama.cpp
 
           cd llama.cpp
 
-          echo "========================================"
+          echo ""
           echo "llama.cpp commit:"
           git rev-parse HEAD
+
+          echo ""
+          echo "llama.cpp branch:"
+          git branch --show-current
+
           echo "========================================"
 
 
-      # ---------------------------------------------------------
-      # 2. Force generic STQ1_0 kernel
-      #
-      # IMPORTANT:
-      # We do NOT disable ARM NEON globally.
-      #
-      # Only STQ1_0 is redirected from:
-      #
-      #   ggml_vec_dot_stq1_0_q8_K
-      #
-      # to:
-      #
-      #   ggml_vec_dot_stq1_0_q8_K_generic
-      #
-      # This is specifically for testing STQ1_0 on Apple Silicon.
-      # ---------------------------------------------------------
-      - name: Force generic STQ1_0 kernel
-        script: |
-          set -e
-
-          cd llama.cpp
-
-          python3 - <<'PY'
-          from pathlib import Path
-
-          candidates = [
-              Path("ggml/src/ggml-cpu/ggml-cpu.c"),
-              Path("ggml/src/ggml-cpu/ggml-cpu.cpp"),
-          ]
-
-          target = None
-
-          for p in candidates:
-              if p.exists():
-                  text = p.read_text()
-
-                  if "ggml_vec_dot_stq1_0_q8_K" in text:
-                      target = p
-                      break
-
-          if target is None:
-              raise SystemExit(
-                  "ERROR: Could not find STQ1_0 dispatch file"
-              )
-
-          text = target.read_text()
-
-          print("========================================")
-          print(f"Using dispatch file: {target}")
-          print("========================================")
-
-          old = "ggml_vec_dot_stq1_0_q8_K,"
-          new = "ggml_vec_dot_stq1_0_q8_K_generic,"
-
-          count = text.count(old)
-
-          print(f"Found {count} STQ1_0 dispatch occurrence(s)")
-
-          if count == 0:
-              print("")
-              print("Relevant STQ1_0 lines:")
-              print("----------------------------------------")
-
-              for line in text.splitlines():
-                  if "stq1_0" in line.lower():
-                      print(line)
-
-              print("----------------------------------------")
-
-              raise SystemExit(
-                  "ERROR: STQ1_0 dispatch target not found"
-              )
-
-          # Replace only the first dispatch occurrence.
-          text = text.replace(old, new, 1)
-
-          target.write_text(text)
-
-          # -----------------------------------------------------
-          # Verification
-          # -----------------------------------------------------
-
-          patched = target.read_text()
-
-          if new not in patched:
-              raise SystemExit(
-                  "ERROR: Patch verification failed"
-              )
-
-          print("")
-          print("========================================")
-          print("SUCCESS: STQ1_0 generic kernel enabled")
-          print("========================================")
-
-          for line in patched.splitlines():
-              if "GGML_TYPE_STQ1_0" in line:
-                  print(line)
-
-              elif "ggml_vec_dot_stq1_0_q8_K_generic" in line:
-                  print(line)
-
-          print("========================================")
-          PY
-
-
-      # ---------------------------------------------------------
-      # 3. Build llama.cpp for iOS arm64
-      # ---------------------------------------------------------
-      - name: Build iOS Device Only
+      # =========================================================
+      # 2. Verify Q2_0c support
+      # =========================================================
+      - name: Verify Q2_0c support
         script: |
           set -e
 
           cd llama.cpp
 
           echo "========================================"
-          echo "Configuring iOS arm64 build"
+          echo "Checking Q2_0c support"
+          echo "========================================"
+
+          if grep -R "Q2_0c" ggml src include 2>/dev/null | head -n 20; then
+            echo ""
+            echo "Q2_0c references found."
+          else
+            echo ""
+            echo "WARNING: Q2_0c text was not found."
+            echo "The build will continue, but this must be checked."
+          fi
+
+          echo ""
+          echo "Checking ggml type definitions..."
+
+          grep -R "Q2_0c" ggml/include ggml/src 2>/dev/null | head -n 30 || true
+
+          echo "========================================"
+
+
+      # =========================================================
+      # 3. Configure iOS arm64 + Metal
+      # =========================================================
+      - name: Configure iOS arm64 Metal
+        script: |
+          set -e
+
+          cd llama.cpp
+
+          echo "========================================"
+          echo "Configuring iOS arm64 + Metal"
           echo "========================================"
 
           cmake -B build-ios-device \
@@ -146,17 +86,37 @@ workflows:
             -DCMAKE_OSX_SYSROOT=iphoneos \
             -DCMAKE_OSX_ARCHITECTURES=arm64 \
             -DCMAKE_SYSTEM_PROCESSOR=arm64 \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=16.0 \
             -DGGML_NATIVE=OFF \
             -DBUILD_SHARED_LIBS=OFF \
             -DGGML_BACKEND_DL=OFF \
-            -DGGML_METAL=OFF \
+            -DGGML_METAL=ON \
+            -DGGML_METAL_EMBED_LIBRARY=ON \
             -DGGML_BLAS=OFF \
             -DLLAMA_BUILD_EXAMPLES=OFF \
             -DLLAMA_BUILD_TESTS=OFF \
-            -DLLAMA_BUILD_SERVER=OFF
+            -DLLAMA_BUILD_SERVER=OFF \
+            -DLLAMA_BUILD_TOOLS=OFF
+
+          echo ""
+          echo "========================================"
+          echo "CMake configuration complete"
+          echo "========================================"
+
+
+      # =========================================================
+      # 4. Build llama + ggml + Metal
+      # =========================================================
+      - name: Build iOS Device
+        script: |
+          set -e
+
+          cd llama.cpp
 
           echo "========================================"
-          echo "Building llama"
+          echo "Building llama.cpp"
+          echo "Target: iOS arm64"
+          echo "Backend: Metal"
           echo "========================================"
 
           cmake --build build-ios-device \
@@ -164,11 +124,16 @@ workflows:
             --target llama \
             --parallel
 
+          echo ""
+          echo "========================================"
+          echo "Build completed"
+          echo "========================================"
 
-      # ---------------------------------------------------------
-      # 4. Locate static libraries
-      # ---------------------------------------------------------
-      - name: Locate Built Libraries
+
+      # =========================================================
+      # 5. Locate all required static libraries
+      # =========================================================
+      - name: Locate Libraries
         script: |
           set -e
 
@@ -198,27 +163,31 @@ workflows:
             | grep "Release-iphoneos" \
             | head -n 1)
 
+          GGML_METAL_LIB=$(find build-ios-device \
+            -name "libggml-metal.a" \
+            | grep "Release-iphoneos" \
+            | head -n 1)
+
           echo "LLAMA_LIB:"
           echo "$LLAMA_LIB"
 
           echo ""
-
           echo "GGML_LIB:"
           echo "$GGML_LIB"
 
           echo ""
-
           echo "GGML_BASE_LIB:"
           echo "$GGML_BASE_LIB"
 
           echo ""
-
           echo "GGML_CPU_LIB:"
           echo "$GGML_CPU_LIB"
 
           echo ""
+          echo "GGML_METAL_LIB:"
+          echo "$GGML_METAL_LIB"
 
-          # Fail explicitly if something wasn't found.
+          echo ""
 
           test -n "$LLAMA_LIB" || {
             echo "ERROR: libllama.a not found"
@@ -240,10 +209,19 @@ workflows:
             exit 1
           }
 
+          test -n "$GGML_METAL_LIB" || {
+            echo "ERROR: libggml-metal.a not found"
+            exit 1
+          }
 
-      # ---------------------------------------------------------
-      # 5. Combine static libraries
-      # ---------------------------------------------------------
+          echo "========================================"
+          echo "All libraries found"
+          echo "========================================"
+
+
+      # =========================================================
+      # 6. Combine static libraries
+      # =========================================================
       - name: Combine Static Libraries
         script: |
           set -e
@@ -272,6 +250,11 @@ workflows:
             | grep "Release-iphoneos" \
             | head -n 1)
 
+          GGML_METAL_LIB=$(find build-ios-device \
+            -name "libggml-metal.a" \
+            | grep "Release-iphoneos" \
+            | head -n 1)
+
           echo "========================================"
           echo "Combining static libraries"
           echo "========================================"
@@ -281,41 +264,47 @@ workflows:
             "$LLAMA_LIB" \
             "$GGML_LIB" \
             "$GGML_BASE_LIB" \
-            "$GGML_CPU_LIB"
+            "$GGML_CPU_LIB" \
+            "$GGML_METAL_LIB"
 
-          echo "Combined library created:"
+          echo ""
+          echo "Combined library:"
           ls -lh build-ios-device/combined/libllama_combined.a
 
+          echo "========================================"
 
-      # ---------------------------------------------------------
-      # 6. Prepare headers
-      # ---------------------------------------------------------
+
+      # =========================================================
+      # 7. Prepare public headers
+      # =========================================================
       - name: Prepare Headers
         script: |
           set -e
 
           cd llama.cpp
 
+          rm -rf build-apple/merged-headers
           mkdir -p build-apple/merged-headers
 
           echo "========================================"
-          echo "Copying llama headers"
+          echo "Preparing headers"
           echo "========================================"
 
           cp include/*.h \
             build-apple/merged-headers/
 
-          echo "========================================"
-          echo "Copying ggml headers"
-          echo "========================================"
-
           cp ggml/include/*.h \
             build-apple/merged-headers/
 
+          echo "Headers:"
+          ls -lah build-apple/merged-headers
 
-      # ---------------------------------------------------------
-      # 7. Create module map
-      # ---------------------------------------------------------
+          echo "========================================"
+
+
+      # =========================================================
+      # 8. Create module map
+      # =========================================================
       - name: Create Module Map
         script: |
           set -e
@@ -330,21 +319,24 @@ workflows:
           EOF
 
           echo "========================================"
-          echo "module.modulemap:"
+          echo "module.modulemap"
           echo "========================================"
 
           cat build-apple/merged-headers/module.modulemap
 
+          echo "========================================"
 
-      # ---------------------------------------------------------
-      # 8. Create XCFramework
-      # ---------------------------------------------------------
+
+      # =========================================================
+      # 9. Create XCFramework
+      # =========================================================
       - name: Create XCFramework
         script: |
           set -e
 
           cd llama.cpp
 
+          rm -rf build-apple/llama.xcframework
           mkdir -p build-apple
 
           echo "========================================"
@@ -356,15 +348,62 @@ workflows:
             -headers build-apple/merged-headers \
             -output build-apple/llama.xcframework
 
+          echo ""
           echo "========================================"
           echo "XCFramework created"
+          echo "========================================"
+
+          find build-apple/llama.xcframework -maxdepth 3 -type f | sort
+
+          echo ""
+          echo "========================================"
+          echo "XCFramework structure"
           echo "========================================"
 
           ls -lah build-apple/llama.xcframework
 
 
-    # -----------------------------------------------------------
-    # Artifacts
-    # -----------------------------------------------------------
+      # =========================================================
+      # 10. Final verification
+      # =========================================================
+      - name: Verify XCFramework
+        script: |
+          set -e
+
+          cd llama.cpp
+
+          FRAMEWORK="build-apple/llama.xcframework/ios-arm64"
+
+          echo "========================================"
+          echo "Final verification"
+          echo "========================================"
+
+          test -d "$FRAMEWORK" || {
+            echo "ERROR: ios-arm64 slice not found"
+            exit 1
+          }
+
+          test -f "$FRAMEWORK/llama.framework/llama" || {
+            echo "ERROR: llama.framework binary not found"
+            exit 1
+          }
+
+          echo "SUCCESS:"
+          echo "  iOS arm64 slice: OK"
+          echo "  llama.framework: OK"
+          echo "  Metal: enabled during build"
+          echo "  Target: iphoneos"
+          echo "  Architecture: arm64"
+
+          echo ""
+          echo "Binary information:"
+          file "$FRAMEWORK/llama.framework/llama"
+
+          echo ""
+          echo "========================================"
+          echo "READY FOR LocalTranslator"
+          echo "========================================"
+
+
     artifacts:
       - llama.cpp/build-apple/llama.xcframework
