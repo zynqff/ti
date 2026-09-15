@@ -11,59 +11,103 @@ workflows:
     scripts:
 
       # =========================================================
-      # 1. Checkout llama.cpp with Q2_0c / HY-MT2 2-bit support
+      # 1. Checkout llama.cpp PR #19357
+      #    Exact commit used by the working Windows Q2_0C build
       # =========================================================
-      - name: Checkout Q2_0c llama.cpp
+      - name: Checkout llama.cpp PR #19357
         script: |
           set -e
 
           echo "========================================"
-          echo "Cloning llama.cpp Q2_0c runtime"
+          echo "Checkout llama.cpp PR #19357"
           echo "========================================"
 
-          git clone --branch pr-19357-sme2-int2 --single-branch \
-            https://github.com/sjl623/llama.cpp.git llama.cpp
+          git clone https://github.com/ggml-org/llama.cpp.git llama.cpp
 
           cd llama.cpp
 
           echo ""
-          echo "llama.cpp commit:"
+          echo "Fetching PR #19357..."
+          git fetch origin pull/19357/head:pr-19357-sme2-int2
+
+          git checkout pr-19357-sme2-int2
+
+          echo ""
+          echo "Current branch:"
+          git branch --show-current
+
+          echo ""
+          echo "Current commit:"
           git rev-parse HEAD
 
           echo ""
-          echo "llama.cpp branch:"
-          git branch --show-current
+          echo "Last commit:"
+          git log -1 --oneline
 
+          EXPECTED_COMMIT="2af64dd00a6689a7bfaf69b4768a944d0ec6bade"
+          ACTUAL_COMMIT="$(git rev-parse HEAD)"
+
+          echo ""
+          echo "Expected commit:"
+          echo "$EXPECTED_COMMIT"
+
+          echo "Actual commit:"
+          echo "$ACTUAL_COMMIT"
+
+          if [ "$ACTUAL_COMMIT" != "$EXPECTED_COMMIT" ]; then
+            echo ""
+            echo "ERROR: Wrong llama.cpp commit!"
+            echo "The build must use the exact Q2_0C runtime tested on Windows."
+            exit 1
+          fi
+
+          echo ""
+          echo "SUCCESS: Correct PR #19357 commit selected."
           echo "========================================"
 
 
       # =========================================================
-      # 2. Verify Q2_0c support
+      # 2. Verify Q2_0C / INT2 implementation
       # =========================================================
-      - name: Verify Q2_0c support
+      - name: Verify Q2_0C support
         script: |
           set -e
 
           cd llama.cpp
 
           echo "========================================"
-          echo "Checking Q2_0c support"
+          echo "Verifying Q2_0C / INT2 support"
           echo "========================================"
 
-          if grep -R "Q2_0c" ggml src include 2>/dev/null | head -n 20; then
+          echo ""
+          echo "Searching for Q2_0C symbols..."
+
+          Q2_COUNT=$(grep -R "Q2_0c" ggml src include 2>/dev/null | wc -l | tr -d ' ' || true)
+
+          echo "Q2_0c references found: $Q2_COUNT"
+
+          if [ "$Q2_COUNT" -eq 0 ]; then
             echo ""
-            echo "Q2_0c references found."
-          else
-            echo ""
-            echo "WARNING: Q2_0c text was not found."
-            echo "The build will continue, but this must be checked."
+            echo "ERROR: Q2_0c implementation was not found!"
+            exit 1
           fi
 
           echo ""
-          echo "Checking ggml type definitions..."
+          echo "Example Q2_0c references:"
+          grep -R "Q2_0c" ggml src include 2>/dev/null | head -n 30 || true
 
-          grep -R "Q2_0c" ggml/include ggml/src 2>/dev/null | head -n 30 || true
+          echo ""
+          echo "Checking INT2-related files..."
 
+          find ggml -type f \
+            \( -name "*.c" -o -name "*.cpp" -o -name "*.h" \) \
+            -print0 2>/dev/null \
+            | xargs -0 grep -l "Q2_0c" 2>/dev/null \
+            | head -n 30 || true
+
+          echo ""
+          echo "========================================"
+          echo "Q2_0C implementation detected"
           echo "========================================"
 
 
@@ -77,8 +121,16 @@ workflows:
           cd llama.cpp
 
           echo "========================================"
-          echo "Configuring iOS arm64 + Metal"
+          echo "Configuring llama.cpp"
           echo "========================================"
+          echo "Platform: iOS"
+          echo "SDK: iphoneos"
+          echo "Architecture: arm64"
+          echo "GPU backend: Metal"
+          echo "Deployment target: iOS 16.0"
+          echo "========================================"
+
+          rm -rf build-ios-device
 
           cmake -B build-ios-device \
             -G Xcode \
@@ -87,11 +139,13 @@ workflows:
             -DCMAKE_OSX_ARCHITECTURES=arm64 \
             -DCMAKE_SYSTEM_PROCESSOR=arm64 \
             -DCMAKE_OSX_DEPLOYMENT_TARGET=16.0 \
+            -DCMAKE_BUILD_TYPE=Release \
             -DGGML_NATIVE=OFF \
             -DBUILD_SHARED_LIBS=OFF \
             -DGGML_BACKEND_DL=OFF \
             -DGGML_METAL=ON \
             -DGGML_METAL_EMBED_LIBRARY=ON \
+            -DGGML_METAL_TARGET_OS=ios \
             -DGGML_BLAS=OFF \
             -DLLAMA_BUILD_EXAMPLES=OFF \
             -DLLAMA_BUILD_TESTS=OFF \
@@ -105,7 +159,7 @@ workflows:
 
 
       # =========================================================
-      # 4. Build llama + ggml + Metal
+      # 4. Build llama.cpp + ggml + Metal
       # =========================================================
       - name: Build iOS Device
         script: |
@@ -115,13 +169,14 @@ workflows:
 
           echo "========================================"
           echo "Building llama.cpp"
+          echo "========================================"
           echo "Target: iOS arm64"
           echo "Backend: Metal"
+          echo "Configuration: Release"
           echo "========================================"
 
           cmake --build build-ios-device \
             --config Release \
-            --target llama \
             --parallel
 
           echo ""
@@ -131,7 +186,7 @@ workflows:
 
 
       # =========================================================
-      # 5. Locate all required static libraries
+      # 5. Locate required static libraries
       # =========================================================
       - name: Locate Libraries
         script: |
@@ -140,51 +195,60 @@ workflows:
           cd llama.cpp
 
           echo "========================================"
-          echo "Searching for libraries"
+          echo "Searching for iOS static libraries"
+          echo "========================================"
+
+          find build-ios-device \
+            -name "*.a" \
+            -path "*Release-iphoneos*" \
+            -print \
+            | sort
+
+          echo ""
           echo "========================================"
 
           LLAMA_LIB=$(find build-ios-device \
             -name "libllama.a" \
-            | grep "Release-iphoneos" \
+            -path "*Release-iphoneos*" \
             | head -n 1)
 
           GGML_LIB=$(find build-ios-device \
             -name "libggml.a" \
-            | grep "Release-iphoneos" \
+            -path "*Release-iphoneos*" \
             | head -n 1)
 
           GGML_BASE_LIB=$(find build-ios-device \
             -name "libggml-base.a" \
-            | grep "Release-iphoneos" \
+            -path "*Release-iphoneos*" \
             | head -n 1)
 
           GGML_CPU_LIB=$(find build-ios-device \
             -name "libggml-cpu.a" \
-            | grep "Release-iphoneos" \
+            -path "*Release-iphoneos*" \
             | head -n 1)
 
           GGML_METAL_LIB=$(find build-ios-device \
             -name "libggml-metal.a" \
-            | grep "Release-iphoneos" \
+            -path "*Release-iphoneos*" \
             | head -n 1)
 
-          echo "LLAMA_LIB:"
+          echo "libllama.a:"
           echo "$LLAMA_LIB"
 
           echo ""
-          echo "GGML_LIB:"
+          echo "libggml.a:"
           echo "$GGML_LIB"
 
           echo ""
-          echo "GGML_BASE_LIB:"
+          echo "libggml-base.a:"
           echo "$GGML_BASE_LIB"
 
           echo ""
-          echo "GGML_CPU_LIB:"
+          echo "libggml-cpu.a:"
           echo "$GGML_CPU_LIB"
 
           echo ""
-          echo "GGML_METAL_LIB:"
+          echo "libggml-metal.a:"
           echo "$GGML_METAL_LIB"
 
           echo ""
@@ -215,7 +279,7 @@ workflows:
           }
 
           echo "========================================"
-          echo "All libraries found"
+          echo "All required libraries found"
           echo "========================================"
 
 
@@ -232,27 +296,27 @@ workflows:
 
           LLAMA_LIB=$(find build-ios-device \
             -name "libllama.a" \
-            | grep "Release-iphoneos" \
+            -path "*Release-iphoneos*" \
             | head -n 1)
 
           GGML_LIB=$(find build-ios-device \
             -name "libggml.a" \
-            | grep "Release-iphoneos" \
+            -path "*Release-iphoneos*" \
             | head -n 1)
 
           GGML_BASE_LIB=$(find build-ios-device \
             -name "libggml-base.a" \
-            | grep "Release-iphoneos" \
+            -path "*Release-iphoneos*" \
             | head -n 1)
 
           GGML_CPU_LIB=$(find build-ios-device \
             -name "libggml-cpu.a" \
-            | grep "Release-iphoneos" \
+            -path "*Release-iphoneos*" \
             | head -n 1)
 
           GGML_METAL_LIB=$(find build-ios-device \
             -name "libggml-metal.a" \
-            | grep "Release-iphoneos" \
+            -path "*Release-iphoneos*" \
             | head -n 1)
 
           echo "========================================"
@@ -271,6 +335,13 @@ workflows:
           echo "Combined library:"
           ls -lh build-ios-device/combined/libllama_combined.a
 
+          echo ""
+          echo "Architecture:"
+          lipo -info build-ios-device/combined/libllama_combined.a
+
+          echo ""
+          echo "========================================"
+          echo "Static libraries combined"
           echo "========================================"
 
 
@@ -287,7 +358,7 @@ workflows:
           mkdir -p build-apple/merged-headers
 
           echo "========================================"
-          echo "Preparing headers"
+          echo "Preparing public headers"
           echo "========================================"
 
           cp include/*.h \
@@ -296,9 +367,15 @@ workflows:
           cp ggml/include/*.h \
             build-apple/merged-headers/
 
+          echo ""
           echo "Headers:"
-          ls -lah build-apple/merged-headers
+          find build-apple/merged-headers \
+            -maxdepth 1 \
+            -type f \
+            -print \
+            | sort
 
+          echo ""
           echo "========================================"
 
 
@@ -353,18 +430,14 @@ workflows:
           echo "XCFramework created"
           echo "========================================"
 
-          find build-apple/llama.xcframework -maxdepth 3 -type f | sort
-
-          echo ""
-          echo "========================================"
-          echo "XCFramework structure"
-          echo "========================================"
-
-          ls -lah build-apple/llama.xcframework
+          find build-apple/llama.xcframework \
+            -maxdepth 4 \
+            -type f \
+            | sort
 
 
       # =========================================================
-      # 10. Final verification
+      # 10. Verify XCFramework
       # =========================================================
       - name: Verify XCFramework
         script: |
@@ -373,9 +446,10 @@ workflows:
           cd llama.cpp
 
           FRAMEWORK="build-apple/llama.xcframework/ios-arm64"
+          BINARY="$FRAMEWORK/llama.framework/llama"
 
           echo "========================================"
-          echo "Final verification"
+          echo "Final XCFramework verification"
           echo "========================================"
 
           test -d "$FRAMEWORK" || {
@@ -383,26 +457,39 @@ workflows:
             exit 1
           }
 
-          test -f "$FRAMEWORK/llama.framework/llama" || {
+          test -d "$FRAMEWORK/llama.framework" || {
+            echo "ERROR: llama.framework not found"
+            exit 1
+          }
+
+          test -f "$BINARY" || {
             echo "ERROR: llama.framework binary not found"
             exit 1
           }
 
-          echo "SUCCESS:"
-          echo "  iOS arm64 slice: OK"
-          echo "  llama.framework: OK"
-          echo "  Metal: enabled during build"
-          echo "  Target: iphoneos"
-          echo "  Architecture: arm64"
+          echo "iOS arm64 slice:      OK"
+          echo "llama.framework:      OK"
+          echo "Binary:               OK"
+          echo "Metal:                ENABLED"
+          echo "Target SDK:           iphoneos"
+          echo "Architecture:         arm64"
+          echo "Quantization:         Q2_0C / INT2"
+          echo "Runtime:              llama.cpp PR #19357"
+          echo "Commit:               2af64dd00a6689a7bfaf69b4768a944d0ec6bade"
 
           echo ""
           echo "Binary information:"
-          file "$FRAMEWORK/llama.framework/llama"
+          file "$BINARY"
+
+          echo ""
+          echo "Architecture information:"
+          lipo -info "$BINARY"
 
           echo ""
           echo "========================================"
-          echo "READY FOR LocalTranslator"
+          echo "SUCCESS"
           echo "========================================"
+          echo "Ready for LocalTranslator."
 
 
     artifacts:
