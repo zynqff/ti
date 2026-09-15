@@ -11,7 +11,8 @@ workflows:
     scripts:
 
       # =========================================================
-      # 1. Checkout exact working llama.cpp revision
+      # 1. Checkout llama.cpp
+      #    PR #19357 / Q2_0C / INT2
       # =========================================================
       - name: Checkout llama.cpp Q2_0C
         script: |
@@ -25,23 +26,27 @@ workflows:
 
           cd llama.cpp
 
+          echo ""
           echo "Fetching PR #19357..."
           git fetch origin pull/19357/head
 
-          echo "Checking out tested commit..."
+          echo ""
+          echo "Checking out exact tested commit..."
           git checkout 2af64dd00a6689a7bfaf69b4768a944d0ec6bade
 
           EXPECTED="2af64dd00a6689a7bfaf69b4768a944d0ec6bade"
           ACTUAL="$(git rev-parse HEAD)"
 
           echo ""
-          echo "Expected:"
+          echo "Expected commit:"
           echo "$EXPECTED"
 
-          echo "Actual:"
+          echo ""
+          echo "Actual commit:"
           echo "$ACTUAL"
 
           if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo ""
             echo "ERROR: Wrong llama.cpp commit!"
             exit 1
           fi
@@ -52,7 +57,7 @@ workflows:
 
           echo ""
           echo "========================================"
-          echo "Q2_0C verification"
+          echo "Q2_0C source verification"
           echo "========================================"
 
           echo ""
@@ -88,14 +93,17 @@ workflows:
           echo "========================================"
           echo "Configuring llama.cpp"
           echo "========================================"
-          echo "Platform: iOS"
-          echo "SDK: iphoneos"
-          echo "Architecture: arm64"
-          echo "Metal: ON"
+
+          echo "Platform:          iOS"
+          echo "SDK:               iphoneos"
+          echo "Architecture:      arm64"
+          echo "Metal:             ON"
           echo "Deployment target: iOS 16.0"
+          echo "Build type:        Release"
           echo "========================================"
 
           rm -rf build-ios-device
+          rm -rf build-apple
 
           cmake -B build-ios-device \
             -G Xcode \
@@ -136,9 +144,10 @@ workflows:
           echo "========================================"
           echo "Building llama target"
           echo "========================================"
-          echo "Target: iOS arm64"
-          echo "Backend: Metal"
-          echo "Configuration: Release"
+
+          echo "Target:      iOS arm64"
+          echo "Backend:     Metal"
+          echo "Build type:  Release"
           echo "========================================"
 
           cmake --build build-ios-device \
@@ -161,7 +170,7 @@ workflows:
 
 
       # =========================================================
-      # 4. Locate all required libraries
+      # 4. Locate libraries
       # =========================================================
       - name: Locate Libraries
         script: |
@@ -170,7 +179,7 @@ workflows:
           cd llama.cpp
 
           echo "========================================"
-          echo "Locating libraries"
+          echo "Locating iOS libraries"
           echo "========================================"
 
           LLAMA_LIB=$(find build-ios-device \
@@ -220,30 +229,30 @@ workflows:
 
           echo ""
 
-          test -n "$LLAMA_LIB" || {
+          if [ -z "$LLAMA_LIB" ]; then
             echo "ERROR: libllama.a not found"
             exit 1
-          }
+          fi
 
-          test -n "$GGML_LIB" || {
+          if [ -z "$GGML_LIB" ]; then
             echo "ERROR: libggml.a not found"
             exit 1
-          }
+          fi
 
-          test -n "$GGML_BASE_LIB" || {
+          if [ -z "$GGML_BASE_LIB" ]; then
             echo "ERROR: libggml-base.a not found"
             exit 1
-          }
+          fi
 
-          test -n "$GGML_CPU_LIB" || {
+          if [ -z "$GGML_CPU_LIB" ]; then
             echo "ERROR: libggml-cpu.a not found"
             exit 1
-          }
+          fi
 
-          test -n "$GGML_METAL_LIB" || {
+          if [ -z "$GGML_METAL_LIB" ]; then
             echo "ERROR: libggml-metal.a not found"
             exit 1
-          }
+          fi
 
           echo ""
           echo "========================================"
@@ -252,7 +261,7 @@ workflows:
 
 
       # =========================================================
-      # 5. Combine libraries
+      # 5. Combine static libraries
       # =========================================================
       - name: Combine Static Libraries
         script: |
@@ -309,12 +318,12 @@ workflows:
 
           echo ""
           echo "========================================"
-          echo "Libraries combined successfully"
+          echo "Static libraries combined successfully"
           echo "========================================"
 
 
       # =========================================================
-      # 6. Prepare headers
+      # 6. Prepare public headers
       # =========================================================
       - name: Prepare Headers
         script: |
@@ -326,7 +335,7 @@ workflows:
           mkdir -p build-apple/merged-headers
 
           echo "========================================"
-          echo "Preparing headers"
+          echo "Preparing public headers"
           echo "========================================"
 
           cp include/*.h \
@@ -335,6 +344,8 @@ workflows:
           cp ggml/include/*.h \
             build-apple/merged-headers/
 
+          echo ""
+          echo "Headers:"
           find build-apple/merged-headers \
             -maxdepth 1 \
             -type f \
@@ -342,11 +353,13 @@ workflows:
             | sort
 
           echo ""
-          echo "Headers prepared."
+          echo "========================================"
+          echo "Headers prepared"
+          echo "========================================"
 
 
       # =========================================================
-      # 7. Module map
+      # 7. Create module map
       # =========================================================
       - name: Create Module Map
         script: |
@@ -362,10 +375,13 @@ workflows:
           EOF
 
           echo "========================================"
-          echo "Module map"
+          echo "module.modulemap"
           echo "========================================"
 
           cat build-apple/merged-headers/module.modulemap
+
+          echo ""
+          echo "========================================"
 
 
       # =========================================================
@@ -396,12 +412,12 @@ workflows:
 
           find build-apple/llama.xcframework \
             -maxdepth 4 \
-            -type f \
+            -print \
             | sort
 
 
       # =========================================================
-      # 9. Verify final XCFramework
+      # 9. Verify XCFramework
       # =========================================================
       - name: Verify XCFramework
         script: |
@@ -409,52 +425,81 @@ workflows:
 
           cd llama.cpp
 
-          FRAMEWORK="build-apple/llama.xcframework/ios-arm64"
-          BINARY="$FRAMEWORK/llama.framework/llama"
+          XCFRAMEWORK="build-apple/llama.xcframework"
+          SLICE="$XCFRAMEWORK/ios-arm64"
+          BINARY="$SLICE/libllama_combined.a"
 
           echo "========================================"
           echo "Final XCFramework verification"
           echo "========================================"
 
-          test -d "$FRAMEWORK" || {
+          if [ ! -d "$XCFRAMEWORK" ]; then
+            echo "ERROR: llama.xcframework not found"
+            exit 1
+          fi
+
+          if [ ! -f "$XCFRAMEWORK/Info.plist" ]; then
+            echo "ERROR: XCFramework Info.plist not found"
+            exit 1
+          fi
+
+          if [ ! -d "$SLICE" ]; then
             echo "ERROR: ios-arm64 slice not found"
             exit 1
-          }
+          fi
 
-          test -d "$FRAMEWORK/llama.framework" || {
-            echo "ERROR: llama.framework not found"
+          if [ ! -f "$BINARY" ]; then
+            echo "ERROR: libllama_combined.a not found"
             exit 1
-          }
-
-          test -f "$BINARY" || {
-            echo "ERROR: llama binary not found"
-            exit 1
-          }
+          fi
 
           echo ""
-          echo "iOS arm64:       OK"
-          echo "llama.framework: OK"
-          echo "Binary:           OK"
-          echo "Metal:            ENABLED"
-          echo "SDK:              iphoneos"
-          echo "Architecture:     arm64"
-          echo "Quantization:     Q2_0C / INT2"
-          echo "PR:               #19357"
-          echo "Commit:           2af64dd00a6689a7bfaf69b4768a944d0ec6bade"
+          echo "XCFramework:       OK"
+          echo "Info.plist:        OK"
+          echo "iOS arm64 slice:   OK"
+          echo "Static library:    OK"
+          echo "Metal:             ENABLED"
+          echo "SDK:               iphoneos"
+          echo "Architecture:      arm64"
+          echo "Deployment:        iOS 16.0"
+          echo "Quantization:      Q2_0C / INT2"
+          echo "PR:                #19357"
+          echo "Commit:            2af64dd00a6689a7bfaf69b4768a944d0ec6bade"
 
           echo ""
-          echo "Binary information:"
+          echo "========================================"
+          echo "Binary information"
+          echo "========================================"
+
           file "$BINARY"
 
           echo ""
-          echo "Architecture information:"
+          echo "Architecture:"
           lipo -info "$BINARY"
+
+          echo ""
+          echo "Size:"
+          ls -lh "$BINARY"
+
+          echo ""
+          echo "========================================"
+          echo "XCFramework contents"
+          echo "========================================"
+
+          find "$XCFRAMEWORK" \
+            -maxdepth 4 \
+            -print \
+            | sort
 
           echo ""
           echo "========================================"
           echo "SUCCESS"
           echo "========================================"
+          echo "llama.xcframework is ready for LocalTranslator."
 
 
+    # ===========================================================
+    # 10. Codemagic artifact
+    # ===========================================================
     artifacts:
       - llama.cpp/build-apple/llama.xcframework
