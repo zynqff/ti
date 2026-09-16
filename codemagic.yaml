@@ -1,0 +1,123 @@
+workflows:
+  build-llama-xcframework:
+    name: Build llama.cpp XCFramework (Q2_0C Metal)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+
+    environment:
+      xcode: latest
+
+    triggering:
+      events:
+        - push
+        - tag
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+      cancel_previous_builds: true
+
+    scripts:
+      - name: Fetch llama.cpp and apply Q2_0C Metal patch
+        script: |
+          set -euo pipefail
+
+          ROOT="$CM_BUILD_DIR"
+          LLAMA="$ROOT/.build/llama.cpp"
+
+          rm -rf "$ROOT/.build"
+          mkdir -p "$ROOT/.build"
+
+          git clone --filter=blob:none \
+            https://github.com/chaxu01/llama.cpp.git \
+            "$LLAMA"
+
+          cd "$LLAMA"
+          git checkout --detach 92c448af6
+
+          "$ROOT/Scripts/patch_q2_0c_metal.sh"
+
+      - name: Build iOS arm64 XCFramework
+        script: |
+          set -euo pipefail
+
+          ROOT="$CM_BUILD_DIR"
+          LLAMA="$ROOT/.build/llama.cpp"
+          BUILD="$LLAMA/build-apple"
+
+          cmake -S "$LLAMA" -B "$BUILD" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_SYSTEM_NAME=iOS \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=16.0 \
+            -DGGML_METAL=ON \
+            -DGGML_METAL_EMBED_LIBRARY=ON \
+            -DGGML_METAL_TARGET_OS=ios \
+            -DGGML_OPENMP=OFF \
+            -DLLAMA_BUILD_TESTS=OFF \
+            -DLLAMA_BUILD_EXAMPLES=OFF \
+            -DLLAMA_BUILD_TOOLS=OFF \
+            -DLLAMA_BUILD_SERVER=OFF
+
+          cmake --build "$BUILD" \
+            --config Release \
+            --target llama \
+            -j2
+
+          XCFW="$BUILD/llama.xcframework"
+          test -d "$XCFW"
+
+          echo "XCFramework:"
+          find "$XCFW" -maxdepth 3 -type f | sort
+
+      - name: Verify library only
+        script: |
+          set -euo pipefail
+
+          ROOT="$CM_BUILD_DIR"
+          XCFW="$ROOT/.build/llama.cpp/build-apple/llama.xcframework"
+
+          test -d "$XCFW"
+          test -d "$XCFW/ios-arm64"
+
+          # Header/module presence.
+          test -f "$XCFW/ios-arm64/Headers/llama.h"
+
+          # Static library presence.
+          test -f "$XCFW/ios-arm64/libllama.a"
+
+          # Native Q2_0C Metal source/dispatch checks.
+          grep -q 'kernel_mul_mv_q2_0c_f32' \
+            "$ROOT/.build/llama.cpp/ggml/src/ggml-metal/ggml-metal.metal"
+
+          grep -q 'kernel_mul_mm_q2_0c_f32' \
+            "$ROOT/.build/llama.cpp/ggml/src/ggml-metal/ggml-metal.metal"
+
+          echo "Library-only build verification passed."
+
+      - name: Package XCFramework ZIP
+        script: |
+          set -euo pipefail
+
+          ROOT="$CM_BUILD_DIR"
+          XCFW="$ROOT/.build/llama.cpp/build-apple/llama.xcframework"
+          OUT="$ROOT/build"
+
+          rm -rf "$OUT"
+          mkdir -p "$OUT/package"
+
+          cp -R "$XCFW" "$OUT/package/llama.xcframework"
+
+          # Include the generated public headers/module metadata alongside the framework.
+          cd "$OUT/package"
+          zip -r -y "../llama-xcframework-ios-arm64-q2_0c-metal.zip" \
+            llama.xcframework >/dev/null
+
+          # Also provide a flat copy for Codemagic artifact browsing.
+          cp -R "$XCFW" "$OUT/llama.xcframework"
+
+          ls -lh "$OUT/llama-xcframework-ios-arm64-q2_0c-metal.zip"
+
+    artifacts:
+      - build/llama-xcframework-ios-arm64-q2_0c-metal.zip
+      - build/llama.xcframework
