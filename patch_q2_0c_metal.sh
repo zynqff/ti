@@ -1,6 +1,6 @@
 #!/bin/bash
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT="$(cd "$(dirname "$0")" && pwd)"
 LLAMA="$ROOT/.build/llama.cpp"
 REPO="https://github.com/chaxu01/llama.cpp.git"
 COMMIT="92c448af6"
