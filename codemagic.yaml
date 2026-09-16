@@ -1,0 +1,226 @@
+workflows:
+  build-llama-xcframework:
+    name: Build llama.cpp XCFramework - Q2_0C Metal
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+
+    environment:
+      xcode: latest
+
+    triggering:
+      events:
+        - push
+        - tag
+      branch_patterns:
+        - pattern: main
+          include: true
+          source: true
+      cancel_previous_builds: true
+
+    scripts:
+      - name: Fetch llama.cpp and apply Q2_0C Metal patch
+        script: |
+          set -euo pipefail
+
+          ROOT="$CM_BUILD_DIR"
+          LLAMA="$ROOT/.build/llama.cpp"
+          PATCH="$ROOT/patch_q2_0c_metal.sh"
+
+          echo "Repository root: $ROOT"
+          echo "Patch: $PATCH"
+
+          test -f "$PATCH" || {
+            echo "ERROR: patch_q2_0c_metal.sh was not found in repository root."
+            echo "Expected: $ROOT/patch_q2_0c_metal.sh"
+            exit 1
+          }
+
+          rm -rf "$ROOT/.build"
+          mkdir -p "$ROOT/.build"
+
+          git clone --filter=blob:none \
+            https://github.com/chaxu01/llama.cpp.git \
+            "$LLAMA"
+
+          cd "$LLAMA"
+          git checkout --detach 92c448af6
+
+          chmod +x "$PATCH"
+          "$PATCH"
+
+      - name: Configure llama.cpp for iOS arm64 + Metal
+        script: |
+          set -euo pipefail
+
+          ROOT="$CM_BUILD_DIR"
+          LLAMA="$ROOT/.build/llama.cpp"
+          BUILD="$LLAMA/build-apple"
+
+          rm -rf "$BUILD"
+
+          cmake -S "$LLAMA" -B "$BUILD" \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_SYSTEM_NAME=iOS \
+            -DCMAKE_OSX_SYSROOT=iphoneos \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=16.0 \
+            -DGGML_METAL=ON \
+            -DGGML_METAL_EMBED_LIBRARY=ON \
+            -DGGML_METAL_TARGET_OS=ios \
+            -DGGML_OPENMP=OFF \
+            -DLLAMA_BUILD_TESTS=OFF \
+            -DLLAMA_BUILD_EXAMPLES=OFF \
+            -DLLAMA_BUILD_TOOLS=OFF \
+            -DLLAMA_BUILD_SERVER=OFF
+
+      - name: Build llama static library
+        script: |
+          set -euo pipefail
+
+          ROOT="$CM_BUILD_DIR"
+          BUILD="$ROOT/.build/llama.cpp/build-apple"
+
+          cmake --build "$BUILD" \
+            --config Release \
+            --target llama \
+            -j2
+
+      - name: Create iOS arm64 XCFramework
+        script: |
+          set -euo pipefail
+
+          ROOT="$CM_BUILD_DIR"
+          LLAMA="$ROOT/.build/llama.cpp"
+          BUILD="$LLAMA/build-apple"
+          OUT="$ROOT/build"
+
+          rm -rf "$OUT"
+          mkdir -p "$OUT"
+
+          LIBS=()
+
+          for lib in \
+            "$BUILD/src/libllama.a" \
+            "$BUILD/src/libggml.a" \
+            "$BUILD/ggml/src/libggml.a" \
+            "$BUILD/ggml/src/libggml-base.a" \
+            "$BUILD/ggml/src/libggml-cpu.a" \
+            "$BUILD/ggml/src/libggml-metal.a"; do
+            if [ -f "$lib" ]; then
+              LIBS+=("$lib")
+            fi
+          done
+
+          test "${#LIBS[@]}" -gt 0 || {
+            echo "ERROR: No llama/ggml static libraries found."
+            find "$BUILD" -name '*.a' -print
+            exit 1
+          }
+
+          mkdir -p "$OUT/archive" "$OUT/headers"
+
+          # Prefer the CMake-generated umbrella/static llama library when available.
+          if [ -f "$BUILD/src/libllama.a" ]; then
+            cp "$BUILD/src/libllama.a" "$OUT/archive/libllama.a"
+          elif [ -f "$BUILD/libllama.a" ]; then
+            cp "$BUILD/libllama.a" "$OUT/archive/libllama.a"
+          else
+            echo "ERROR: libllama.a not found."
+            find "$BUILD" -name 'libllama.a' -print
+            exit 1
+          fi
+
+          # Collect public llama headers.
+          if [ -d "$LLAMA/include" ]; then
+            cp -R "$LLAMA/include/." "$OUT/headers/"
+          fi
+
+          # Add generated ggml headers if needed by the public API.
+          if [ -d "$LLAMA/ggml/include" ]; then
+            mkdir -p "$OUT/headers/ggml"
+            cp -R "$LLAMA/ggml/include/." "$OUT/headers/ggml/"
+          fi
+
+          # XCFramework must contain every static dependency required by libllama.
+          # Combine the static archives into one deterministic archive.
+          rm -f "$OUT/archive/libllama_combined.a"
+
+          OBJECT_DIR="$OUT/objects"
+          rm -rf "$OBJECT_DIR"
+          mkdir -p "$OBJECT_DIR"
+
+          for lib in "${LIBS[@]}"; do
+            name="$(basename "$lib" .a)"
+            mkdir -p "$OBJECT_DIR/$name"
+            (cd "$OBJECT_DIR/$name" && ar -x "$lib")
+          done
+
+          find "$OBJECT_DIR" -type f -name '*.o' -print0 |
+            xargs -0 libtool -static -o "$OUT/archive/libllama_combined.a"
+
+          test -s "$OUT/archive/libllama_combined.a"
+
+          # Module map.
+          cat > "$OUT/headers/module.modulemap" <<'EOF'
+          framework module llama {
+            umbrella header "llama.h"
+            export *
+            module * { export * }
+          }
+          EOF
+
+          # If llama.h was not installed by the source tree, fail instead of
+          # silently producing an unusable XCFramework.
+          test -f "$OUT/headers/llama.h"
+
+          rm -rf "$OUT/llama.xcframework"
+
+          xcodebuild -create-xcframework \
+            -library "$OUT/archive/libllama_combined.a" \
+            -headers "$OUT/headers" \
+            -output "$OUT/llama.xcframework"
+
+          test -d "$OUT/llama.xcframework/ios-arm64"
+
+      - name: Verify Q2_0C Metal integration
+        script: |
+          set -euo pipefail
+
+          ROOT="$CM_BUILD_DIR"
+          LLAMA="$ROOT/.build/llama.cpp"
+          METAL="$LLAMA/ggml/src/ggml-metal/ggml-metal.metal"
+
+          test -f "$METAL"
+
+          echo "Checking Q2_0C Metal kernels..."
+
+          grep -q 'kernel_mul_mv_q2_0c_f32' "$METAL"
+          grep -q 'kernel_mul_mm_q2_0c_f32' "$METAL"
+
+          echo "Q2_0C Metal kernels detected."
+
+          echo "Static library:"
+          lipo -info "$ROOT/build/archive/libllama_combined.a"
+
+      - name: Package XCFramework
+        script: |
+          set -euo pipefail
+
+          ROOT="$CM_BUILD_DIR"
+          OUT="$ROOT/build"
+
+          cd "$OUT"
+
+          rm -f llama-xcframework-ios-arm64-q2_0c-metal.zip
+
+          zip -r -y \
+            llama-xcframework-ios-arm64-q2_0c-metal.zip \
+            llama.xcframework
+
+          echo "Final artifacts:"
+          ls -lh \
+            llama-xcframework-ios-arm64-q2_0c-metal.zip
+
+    artifacts:
+      - build/llama-xcframework-ios-arm64-q2_0c-metal.zip
+      - build/llama.xcframework
